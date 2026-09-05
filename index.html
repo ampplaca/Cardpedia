@@ -53,6 +53,13 @@
     min-height: 100vh;
   }
 
+  .shell.no-rail {
+    grid-template-columns: 1fr;
+  }
+  .shell.no-rail .rail {
+    display: none;
+  }
+
   @media (max-width: 860px) {
     .shell { grid-template-columns: 1fr; }
   }
@@ -397,9 +404,10 @@
   }
 
   .tabs {
+    grid-column: 1 / -1;
     display: flex;
     gap: 4px;
-    margin-bottom: 20px;
+    padding: 14px 28px 0;
     border-bottom: 1px solid var(--line);
   }
 
@@ -1315,7 +1323,7 @@
 </head>
 <body>
 
-<div class="shell">
+<div class="shell" id="shellRoot">
   <header class="top">
     <h1>Cardpedia</h1>
     <span class="count" id="resultCount"></span>
@@ -1323,7 +1331,16 @@
     <div class="auth-area" id="authArea"></div>
   </header>
 
-  <aside class="rail">
+  <div class="tabs" id="tabsBar">
+    <div class="tab active" data-tab="all">All Cards</div>
+    <div class="tab" data-tab="skins">Skins</div>
+    <div class="tab" data-tab="wishlist">My Wishlist</div>
+    <div class="tab" data-tab="calculator">Cost Calculator</div>
+    <div class="tab" data-tab="teams">Teams</div>
+    <div class="tab" data-tab="guides">Guides</div>
+  </div>
+
+  <aside class="rail" id="railAside">
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Search by name…">
     </div>
@@ -1369,15 +1386,6 @@
   </aside>
 
   <main>
-    <div class="tabs">
-      <div class="tab active" data-tab="all">All Cards</div>
-      <div class="tab" data-tab="skins">Skins</div>
-      <div class="tab" data-tab="calculator">Cost Calculator</div>
-      <div class="tab" data-tab="teams">Teams</div>
-      <div class="tab" data-tab="guides">Guides</div>
-      <div class="tab" data-tab="wishlist">My Wishlist</div>
-    </div>
-
     <div id="content">
       <div class="loading">Loading the codex…</div>
     </div>
@@ -1927,6 +1935,7 @@ function render() {
   document.querySelectorAll('.tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === state.tab);
   });
+  document.getElementById('shellRoot').classList.toggle('no-rail', state.tab !== 'all');
 
   if (state.tab === 'calculator') {
     document.getElementById('resultCount').textContent = '';
