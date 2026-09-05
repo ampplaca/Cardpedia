@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luvi Codex — Card & Skin Browser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #121016;
+    --surface: #1c1922;
+    --surface-2: #241f2c;
+    --line: rgba(240,236,226,0.08);
+    --line-strong: rgba(240,236,226,0.16);
+    --text: #f0ece2;
+    --text-dim: #a89fae;
+    --text-faint: #6f6779;
+    --gold: #c9a869;
+    --gold-dim: rgba(201,168,105,0.16);
+
+    --el-fire: #e8623d;
+    --el-water: #3d8fe8;
+    --el-grass: #5fa855;
+    --el-electric: #d9c23a;
+    --el-ice: #6fc6d9;
+    --el-ground: #a87c4f;
+    --el-air: #8fd1c8;
+    --el-light: #e8d99a;
+    --el-dark: #8a5fb0;
+    --el-normal: #9a94a3;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  ::selection { background: var(--gold-dim); color: var(--text); }
+
+  a { color: inherit; }
+
+  /* ---------- Layout shell ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.top h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+
+  header.top .count {
+    font-size: 13px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  header.top .spacer { flex: 1; }
+
+  .auth-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .auth-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .auth-btn:hover { background: var(--gold-dim); }
+
+  .auth-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .auth-user .email { color: var(--text); font-weight: 500; }
+
+  .signout-btn {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--text-faint);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .signout-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ---------- Auth modal ---------- */
+  .auth-modal {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    max-width: 380px;
+    width: 100%;
+    padding: 26px 26px 24px;
+  }
+
+  .auth-modal h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  .auth-modal .sub {
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-bottom: 20px;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .auth-tab {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    padding: 7px 4px;
+    margin-right: 18px;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .auth-tab.active { color: var(--text); border-bottom-color: var(--gold); }
+
+  .field-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: block;
+    margin: 14px 0 6px;
+  }
+
+  .auth-modal input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+  }
+  .auth-modal input:focus { border-color: var(--gold); }
+
+  .auth-submit {
+    width: 100%;
+    margin-top: 20px;
+    background: var(--gold);
+    border: none;
+    color: #1a1610;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .auth-submit:hover { opacity: 0.9; }
+  .auth-submit:disabled { opacity: 0.5; cursor: default; }
+
+  .auth-message {
+    margin-top: 14px;
+    font-size: 12.5px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    line-height: 1.4;
+  }
+  .auth-message.error { background: rgba(232,98,61,0.12); color: #e8623d; }
+  .auth-message.success { background: rgba(95,168,85,0.12); color: #5fa855; }
+
+  /* ---------- Filter rail ---------- */
+  .rail {
+    border-right: 1px solid var(--line);
+    padding: 22px 20px 40px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 860px) {
+    .rail {
+      position: static;
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  .search-box {
+    position: relative;
+    margin-bottom: 26px;
+  }
+
+  .search-box input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .search-box input:focus { border-color: var(--gold); }
+  .search-box input::placeholder { color: var(--text-faint); }
+
+  .filter-group {
+    margin-bottom: 24px;
+  }
+
+  .filter-group h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    user-select: none;
+  }
+
+  .chip:hover { border-color: var(--gold); color: var(--text); }
+
+  .chip.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1a1610;
+    font-weight: 600;
+  }
+
+  select.series-select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    padding: 9px 12px;
+    outline: none;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-row input { accent-color: var(--gold); width: 15px; height: 15px; }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 12.5px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    margin-top: 4px;
+  }
+  .clear-btn:hover { color: var(--gold); }
+
+  /* ---------- Main content ---------- */
+  main {
+    padding: 22px 28px 60px;
+    min-width: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tab {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    padding: 9px 18px;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    letter-spacing: 0.01em;
+  }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--gold);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 16px;
+  }
+
+  .card-tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .card-tile:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+  }
+
+  .card-tile .art-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .card-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .iconic-badge {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    background: rgba(18,16,22,0.82);
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--gold-dim);
+  }
+
+  .element-badge {
+    position: absolute;
+    bottom: 7px;
+    left: 7px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 5px;
+    color: #14121a;
+    letter-spacing: 0.02em;
+  }
+
+  .card-tile .info {
+    padding: 10px 11px 12px;
+  }
+
+  .card-tile .name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-tile .series {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-tile .talent {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .skin-count-badge {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 10.5px;
+    color: var(--gold);
+    background: var(--gold-dim);
+    padding: 1px 7px;
+    border-radius: 5px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-faint);
+  }
+
+  .empty-state h2 {
+    font-family: 'Oswald', sans-serif;
+    color: var(--text-dim);
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-faint);
+    font-size: 14px;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,9,13,0.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    max-width: 780px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 2;
+  }
+
+  .modal-header h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  .modal-header .sub {
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+
+  .modal-close {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--text-dim);
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { border-color: var(--gold); color: var(--gold); }
+
+  .modal-body {
+    padding: 20px 24px 28px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .modal-body { grid-template-columns: 1fr; }
+  }
+
+  .modal-art img {
+    width: 100%;
+    border-radius: 10px;
+    display: block;
+  }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 5px;
+    color: #14121a;
+  }
+
+  .tag.neutral {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--line-strong);
+  }
+
+  .skins-section h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin: 22px 0 10px;
+  }
+
+  .skin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+  }
+
+  .skin-thumb {
+    text-align: center;
+  }
+
+  .skin-thumb img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .skin-thumb.legendary img { border-color: var(--gold); }
+  .skin-thumb.mythical img { border-color: #d95fc4; }
+
+  .skin-thumb .sname {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    line-height: 1.25;
+  }
+
+  .rarity-pill {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-top: 3px;
+  }
+  .rarity-pill.event { background: var(--surface-2); color: var(--text-faint); }
+  .rarity-pill.legendary { background: var(--gold-dim); color: var(--gold); }
+  .rarity-pill.mythical { background: rgba(217,95,196,0.16); color: #d95fc4; }
+
+  .no-skins {
+    color: var(--text-faint);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  /* ---------- Wishlist heart ---------- */
+  .skin-thumb { position: relative; }
+
+  .wishlist-heart {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(18,16,22,0.75);
+    border: none;
+    color: rgba(240,236,226,0.7);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .wishlist-heart:hover { color: var(--gold); }
+  .wishlist-heart.wanted { color: var(--gold); }
+  .wishlist-heart.obtained { color: #5fa855; }
+
+  /* ---------- Calculator ---------- */
+  .calc-shell {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 920px;
+  }
+
+  @media (max-width: 760px) {
+    .calc-shell { grid-template-columns: 1fr; }
+  }
+
+  .calc-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+
+  .calc-panel h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 16px;
+    color: var(--text-dim);
+  }
+
+  .calc-field { margin-bottom: 14px; }
+
+  .calc-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-bottom: 5px;
+  }
+
+  .calc-field select, .calc-field input[type="text"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    padding: 9px 11px;
+    outline: none;
+  }
+  .calc-field select:focus, .calc-field input:focus { border-color: var(--gold); }
+
+  .calc-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  .calc-toggle input { accent-color: var(--gold); width: 15px; height: 15px; }
+
+  .calc-card-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 8px;
+    background: var(--surface-2);
+    border-radius: 8px;
+  }
+  .calc-card-preview img {
+    width: 40px;
+    height: 53px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+  .calc-card-preview .cname {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+  }
+  .calc-card-preview .cel {
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  .calc-results {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 22px 24px;
+  }
+
+  .calc-results h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .cost-item {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 13px;
+  }
+
+  .cost-item .clabel {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 3px;
+  }
+
+  .cost-item .cval {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .calc-note {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+
+  .calc-warning {
+    background: rgba(232,98,61,0.1);
+    color: #e8623d;
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+
+  .sacrifice-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .sacrifice-pill {
+    background: var(--gold-dim);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    border-radius: 999px;
+  }
+
+  /* ---------- Teams ---------- */
+  .teams-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .new-team-btn {
+    background: var(--gold);
+    border: none;
+    color: #1a1610;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 9px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .new-team-btn:hover { opacity: 0.9; }
+
+  .team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .team-card .tname {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15.5px;
+    font-weight: 500;
+    min-width: 130px;
+  }
+
+  .team-thumb-row {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+
+  .team-thumb-row img {
+    width: 40px;
+    height: 53px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid var(--line-strong);
+  }
+
+  .team-card-actions { display: flex; gap: 8px; }
+
+  .team-edit-btn, .team-delete-btn {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--text-dim);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .team-edit-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .team-delete-btn:hover { border-color: #e8623d; color: #e8623d; }
+
+  .team-builder-shell {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 22px;
+  }
+
+  @media (max-width: 800px) {
+    .team-builder-shell { grid-template-columns: 1fr; }
+  }
+
+  .builder-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .builder-panel h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  .mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+
+  .mini-card {
+    cursor: pointer;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.1s ease;
+  }
+  .mini-card.disabled { opacity: 0.3; cursor: default; }
+
+  .mini-card img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid transparent;
+  }
+  .mini-card.in-team img { border-color: var(--gold); }
+
+  .mini-card .mname {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .team-name-input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    padding: 9px 12px;
+    outline: none;
+    margin-bottom: 16px;
+  }
+  .team-name-input:focus { border-color: var(--gold); }
+
+  .team-slots {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .slots-label {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .slots-label:not(:first-child) { margin-top: 14px; }
+
+  .slot {
+    aspect-ratio: 3/4;
+    border: 1px dashed var(--line-strong);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .slot img { width: 100%; height: 100%; object-fit: cover; }
+
+  .slot .empty-slot { color: var(--text-faint); font-size: 20px; }
+
+  .slot-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(18,16,22,0.85);
+    color: var(--text);
+    border: none;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot-remove:hover { color: #e8623d; }
+
+  .builder-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .builder-save {
+    flex: 1;
+    background: var(--gold);
+    border: none;
+    color: #1a1610;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 10px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .builder-cancel {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--text-dim);
+    font-size: 13.5px;
+    padding: 10px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  /* ---------- Guides ---------- */
+  .guides-list {
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .guide-item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .guide-item summary {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15.5px;
+    font-weight: 500;
+    padding: 14px 18px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .guide-item summary::-webkit-details-marker { display: none; }
+  .guide-item summary::after {
+    content: '+';
+    color: var(--gold);
+    font-size: 18px;
+  }
+  .guide-item[open] summary::after { content: '−'; }
+  .guide-item summary:hover { color: var(--gold); }
+
+  .guide-body {
+    padding: 0 18px 18px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text-dim);
+  }
+
+  .guide-body p { margin: 0 0 10px; }
+  .guide-body ul { margin: 0 0 10px; padding-left: 20px; }
+  .guide-body li { margin-bottom: 5px; }
+  .guide-body strong { color: var(--text); }
+  .guide-body .g-note {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    font-style: italic;
+    margin-top: 8px;
+  }
+  .guide-body .sub-note {
+    display: block;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  /* ---------- Wishlist ---------- */
+  .wish-section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin: 26px 0 14px;
+  }
+  .wish-section-title:first-child { margin-top: 0; }
+
+  .wish-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+  }
+
+  .wish-item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    position: relative;
+  }
+
+  .wish-item img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    border-radius: 7px;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .wish-item.legendary img { outline: 2px solid var(--gold); }
+  .wish-item.mythical img { outline: 2px solid #d95fc4; }
+
+  .wish-item .wcard { font-size: 10.5px; color: var(--text-faint); }
+  .wish-item .wname {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    line-height: 1.25;
+    margin: 2px 0 6px;
+  }
+
+  .wish-actions { display: flex; gap: 6px; }
+
+  .wish-btn {
+    flex: 1;
+    font-size: 11px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  .wish-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .wish-btn.danger:hover { border-color: #e8623d; color: #e8623d; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="top">
+    <h1>Luvi Codex</h1>
+    <span class="count" id="resultCount"></span>
+    <span class="spacer"></span>
+    <div class="auth-area" id="authArea"></div>
+  </header>
+
+  <aside class="rail">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search by name…">
+    </div>
+
+    <div class="filter-group">
+      <h3>Series</h3>
+      <select class="series-select" id="seriesSelect">
+        <option value="">All series</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <h3>Element</h3>
+      <div class="chip-row" id="elementChips"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Talent</h3>
+      <div class="chip-row" id="talentChips"></div>
+    </div>
+
+    <div class="filter-group">
+      <label class="toggle-row">
+        <input type="checkbox" id="iconicOnly">
+        Iconic only
+      </label>
+    </div>
+
+    <button class="clear-btn" id="clearFilters">Clear all filters</button>
+  </aside>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="all">All Cards</div>
+      <div class="tab" data-tab="withSkins">Has Skins</div>
+      <div class="tab" data-tab="calculator">Cost Calculator</div>
+      <div class="tab" data-tab="teams">Teams</div>
+      <div class="tab" data-tab="guides">Guides</div>
+      <div class="tab" data-tab="wishlist">My Wishlist</div>
+    </div>
+
+    <div id="content">
+      <div class="loading">Loading the codex…</div>
+    </div>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+const SUPABASE_URL = 'https://sfioqvxxbgezxfwnnehm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmaW9xdnh4Ymdlenhmd25uZWhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MjMxNDgsImV4cCI6MjEwMzk5OTE0OH0.Upyz1M-FRZfRD4ffvfli2MOE_lr_Nb_H02SgkQhwfzA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ELEMENT_COLORS = {
+  Fire: 'var(--el-fire)', Water: 'var(--el-water)', Grass: 'var(--el-grass)',
+  Electric: 'var(--el-electric)', Ice: 'var(--el-ice)', Ground: 'var(--el-ground)',
+  Air: 'var(--el-air)', Light: 'var(--el-light)', Dark: 'var(--el-dark)', Normal: 'var(--el-normal)'
+};
+
+let allCards = [];
+let allSkins = [];
+let skinsByCardId = {};
+let currentSession = null;
+let wishlistBySkinId = {}; // skin_id -> { wanted, obtained }
+let currentModalCard = null;
+
+let buildStages = [];
+let gradeTiers = [];
+let rarityGradeCaps = {};
+let regradeConfig = null;
+let attunementConfig = null;
+
+const MILESTONES = [
+  { idx: 0, label: 'Exotic (unevolved)' },
+  { idx: 1, label: 'Legendary' },
+  { idx: 2, label: 'Mythical (Lv.100, base)' },
+  { idx: 3, label: 'Mythical — Awaken 1' },
+  { idx: 4, label: 'Mythical — Awaken 2' },
+  { idx: 5, label: 'Mythical — Awaken 3' },
+  { idx: 6, label: 'Mythical — Awaken 4' },
+  { idx: 7, label: 'Mythical — Awaken 5' },
+  { idx: 8, label: 'Mythical — Awaken 5 + Overdrive' }
+];
+
+let calcState = {
+  cardId: '',
+  startMilestone: 0,
+  targetMilestone: 8,
+  startGrade: 'D',
+  targetGrade: 'S+',
+  includeAttunement: false
+};
+
+const MAX_TEAM_SIZE = 10;
+const STARTING_FIVE = 5;
+let userTeams = [];
+let teamBuilder = null; // { id: existing-id-or-null, name, cardIds: [] }
+let teamSearch = '';
+
+let state = {
+  search: '',
+  series: '',
+  element: null,
+  talent: null,
+  iconicOnly: false,
+  tab: 'all'
+};
+
+/* ---------------- Auth ---------------- */
+
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <div class="auth-user">
+        <span class="email">${currentSession.user.email}</span>
+        <button class="signout-btn" id="signOutBtn">Sign out</button>
+      </div>
+    `;
+    document.getElementById('signOutBtn').onclick = async () => {
+      await sb.auth.signOut();
+    };
+  } else {
+    area.innerHTML = `<button class="auth-btn" id="signInBtn">Sign in</button>`;
+    document.getElementById('signInBtn').onclick = openAuthModal;
+  }
+}
+
+function openAuthModal() {
+  const modalRoot = document.getElementById('modalRoot');
+  modalRoot.innerHTML = `
+    <div class="modal-backdrop" id="authBackdrop">
+      <div class="auth-modal">
+        <h2>Track your own progress</h2>
+        <p class="sub">Sign in to save your skin wishlist across devices.</p>
+        <div class="auth-tabs">
+          <div class="auth-tab active" data-mode="signin">Sign In</div>
+          <div class="auth-tab" data-mode="signup">Sign Up</div>
+        </div>
+        <form id="authForm">
+          <label class="field-label">Email</label>
+          <input type="email" id="authEmail" required autocomplete="email">
+          <label class="field-label">Password</label>
+          <input type="password" id="authPassword" required autocomplete="current-password" minlength="6">
+          <button type="submit" class="auth-submit" id="authSubmitBtn">Sign In</button>
+        </form>
+        <div id="authMessage"></div>
+      </div>
+    </div>
+  `;
+
+  let mode = 'signin';
+  const submitBtn = document.getElementById('authSubmitBtn');
+
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.onclick = () => {
+      mode = tab.dataset.mode;
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t === tab));
+      submitBtn.textContent = mode === 'signin' ? 'Sign In' : 'Create Account';
+      document.getElementById('authMessage').innerHTML = '';
+    };
+  });
+
+  document.getElementById('authBackdrop').onclick = (e) => {
+    if (e.target.id === 'authBackdrop') closeModal();
+  };
+
+  document.getElementById('authForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const msgBox = document.getElementById('authMessage');
+    submitBtn.disabled = true;
+    msgBox.innerHTML = '';
+
+    try {
+      if (mode === 'signin') {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        closeModal();
+      } else {
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.session) {
+          closeModal();
+        } else {
+          msgBox.innerHTML = '<div class="auth-message success">Account created — check your email to confirm, then sign in.</div>';
+        }
+      }
+    } catch (err) {
+      msgBox.innerHTML = `<div class="auth-message error">${err.message}</div>`;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  };
+}
+
+async function loadWishlist() {
+  if (!currentSession) {
+    wishlistBySkinId = {};
+    return;
+  }
+  const { data, error } = await sb.from('user_skin_wishlist').select('*').eq('user_id', currentSession.user.id);
+  if (error) { console.error(error); return; }
+  wishlistBySkinId = {};
+  (data || []).forEach(row => { wishlistBySkinId[row.skin_id] = row; });
+}
+
+// Cycles a skin through: untracked -> wanted -> obtained -> untracked.
+// Returns true if the modal should re-render to reflect the change.
+async function cycleWishlist(skinId) {
+  if (!currentSession) { openAuthModal(); return false; }
+
+  const existing = wishlistBySkinId[skinId];
+
+  if (existing && existing.wanted && existing.obtained) {
+    const { error } = await sb.from('user_skin_wishlist')
+      .delete().eq('user_id', currentSession.user.id).eq('skin_id', skinId);
+    if (error) { console.error(error); return false; }
+    delete wishlistBySkinId[skinId];
+    return true;
+  }
+
+  const payload = {
+    user_id: currentSession.user.id,
+    skin_id: skinId,
+    wanted: true,
+    obtained: !!(existing && existing.wanted),
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await sb.from('user_skin_wishlist')
+    .upsert(payload, { onConflict: 'user_id,skin_id' })
+    .select()
+    .single();
+
+  if (error) { console.error(error); return false; }
+  wishlistBySkinId[skinId] = data;
+  return true;
+}
+
+sb.auth.onAuthStateChange((_event, session) => {
+  currentSession = session;
+  renderAuthArea();
+  loadWishlist().then(() => {
+    if (currentModalCard) openModal(currentModalCard);
+    if (state.tab === 'wishlist') render();
+  });
+  loadTeams().then(() => {
+    if (state.tab === 'teams') render();
+  });
+});
+
+async function loadData() {
+  const [cardsRes, skinsRes, stagesRes, gradesRes, capsRes, regradeRes, attuneRes] = await Promise.all([
+    sb.from('cards').select('*').order('name'),
+    sb.from('skins').select('*'),
+    sb.from('build_stage_templates').select('*').order('stage_order'),
+    sb.from('grade_tiers').select('*').order('tier_order'),
+    sb.from('rarity_grade_caps').select('*'),
+    sb.from('regrade_config').select('*').single(),
+    sb.from('attunement_config').select('*').single()
+  ]);
+
+  if (cardsRes.error) {
+    document.getElementById('content').innerHTML =
+      '<div class="empty-state"><h2>Could not load cards</h2><p>' + cardsRes.error.message + '</p></div>';
+    return;
+  }
+
+  allCards = cardsRes.data || [];
+  allSkins = skinsRes.data || [];
+  buildStages = stagesRes.data || [];
+  gradeTiers = gradesRes.data || [];
+  (capsRes.data || []).forEach(c => { rarityGradeCaps[c.rarity] = c; });
+  regradeConfig = regradeRes.data || null;
+  attunementConfig = attuneRes.data || null;
+
+  skinsByCardId = {};
+  allSkins.forEach(s => {
+    if (!s.card_id) return;
+    if (!skinsByCardId[s.card_id]) skinsByCardId[s.card_id] = [];
+    skinsByCardId[s.card_id].push(s);
+  });
+
+  buildFilters();
+  render();
+}
+
+function buildFilters() {
+  const seriesSet = [...new Set(allCards.map(c => c.series))].sort();
+  const seriesSelect = document.getElementById('seriesSelect');
+  seriesSet.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    seriesSelect.appendChild(opt);
+  });
+
+  const elementSet = [...new Set(allCards.map(c => c.element).filter(Boolean))].sort();
+  const elementChips = document.getElementById('elementChips');
+  elementSet.forEach(el => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = el;
+    chip.dataset.value = el;
+    chip.onclick = () => {
+      state.element = state.element === el ? null : el;
+      render();
+    };
+    elementChips.appendChild(chip);
+  });
+
+  const talentSet = [...new Set(allCards.map(c => c.talent).filter(Boolean))].sort();
+  const talentChips = document.getElementById('talentChips');
+  talentSet.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = t;
+    chip.dataset.value = t;
+    chip.onclick = () => {
+      state.talent = state.talent === t ? null : t;
+      render();
+    };
+    talentChips.appendChild(chip);
+  });
+}
+
+function getFiltered() {
+  let list = allCards;
+
+  if (state.search.trim()) {
+    const q = state.search.trim().toLowerCase();
+    list = list.filter(c => c.name.toLowerCase().includes(q) || c.series.toLowerCase().includes(q));
+  }
+  if (state.series) list = list.filter(c => c.series === state.series);
+  if (state.element) list = list.filter(c => c.element === state.element);
+  if (state.talent) list = list.filter(c => c.talent === state.talent);
+  if (state.iconicOnly) list = list.filter(c => c.is_iconic);
+  if (state.tab === 'withSkins') list = list.filter(c => skinsByCardId[c.id] && skinsByCardId[c.id].length > 0);
+
+  return list;
+}
+
+function render() {
+  document.querySelectorAll('#elementChips .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.value === state.element);
+  });
+  document.querySelectorAll('#talentChips .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.value === state.talent);
+  });
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === state.tab);
+  });
+
+  if (state.tab === 'calculator') {
+    document.getElementById('resultCount').textContent = '';
+    renderCalculator();
+    return;
+  }
+
+  if (state.tab === 'teams') {
+    document.getElementById('resultCount').textContent = '';
+    renderTeamsTab();
+    return;
+  }
+
+  if (state.tab === 'guides') {
+    document.getElementById('resultCount').textContent = '';
+    renderGuides();
+    return;
+  }
+
+  if (state.tab === 'wishlist') {
+    document.getElementById('resultCount').textContent = '';
+    renderWishlistTab();
+    return;
+  }
+
+  const filtered = getFiltered();
+  document.getElementById('resultCount').textContent =
+    filtered.length + ' of ' + allCards.length + ' cards';
+
+  const content = document.getElementById('content');
+
+  if (filtered.length === 0) {
+    content.innerHTML = '<div class="empty-state"><h2>No cards match</h2><p>Try clearing a filter or adjusting your search.</p></div>';
+    return;
+  }
+
+  content.innerHTML = '<div class="grid" id="grid"></div>';
+  const grid = document.getElementById('grid');
+
+  filtered.forEach(card => {
+    const skinCount = (skinsByCardId[card.id] || []).length;
+    const elColor = ELEMENT_COLORS[card.element] || 'var(--el-normal)';
+
+    const tile = document.createElement('div');
+    tile.className = 'card-tile';
+    tile.innerHTML = `
+      <div class="art-wrap">
+        <img src="${card.image_url}" alt="${card.name}" loading="lazy">
+        ${card.is_iconic ? '<span class="iconic-badge">ICONIC</span>' : ''}
+        <span class="element-badge" style="background:${elColor}">${card.element || ''}</span>
+      </div>
+      <div class="info">
+        <p class="name">${card.name}</p>
+        <p class="series">${card.series}</p>
+        <p class="talent">${card.talent || ''}</p>
+        ${skinCount > 0 ? `<span class="skin-count-badge">${skinCount} skin${skinCount > 1 ? 's' : ''}</span>` : ''}
+      </div>
+    `;
+    tile.onclick = () => openModal(card);
+    grid.appendChild(tile);
+  });
+}
+
+function rarityClass(rarity) {
+  if (!rarity) return 'event';
+  if (rarity.includes('Mythical')) return 'mythical';
+  if (rarity.includes('Legendary')) return 'legendary';
+  return 'event';
+}
+
+function openModal(card) {
+  currentModalCard = card;
+  const skins = (skinsByCardId[card.id] || []).slice().sort((a, b) => {
+    const order = { 'Event Mythical': 0, 'Event Legendary': 1, 'Event': 2 };
+    return (order[a.rarity] ?? 3) - (order[b.rarity] ?? 3);
+  });
+
+  const elColor = ELEMENT_COLORS[card.element] || 'var(--el-normal)';
+
+  const modalRoot = document.getElementById('modalRoot');
+  modalRoot.innerHTML = `
+    <div class="modal-backdrop" id="backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h2>${card.name}</h2>
+            <p class="sub">${card.series}</p>
+          </div>
+          <button class="modal-close" id="closeBtn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-art">
+            <img src="${card.image_url}" alt="${card.name}">
+            <div class="tag-row">
+              <span class="tag" style="background:${elColor}">${card.element || ''}</span>
+              <span class="tag neutral">${card.talent || ''}</span>
+              ${card.is_iconic ? '<span class="tag" style="background:var(--gold);color:#1a1610;">Iconic</span>' : ''}
+            </div>
+          </div>
+          <div class="skins-section">
+            <h3>Skins ${skins.length ? '(' + skins.length + ')' : ''}</h3>
+            ${skins.length === 0
+              ? '<p class="no-skins">No skins released for this card yet.</p>'
+              : `<div class="skin-grid">${skins.map(s => {
+                  const w = wishlistBySkinId[s.skin_id];
+                  const heartClass = w && w.obtained ? 'obtained' : (w && w.wanted ? 'wanted' : '');
+                  const heartSymbol = w && w.obtained ? '✓' : '♥';
+                  return `
+                  <div class="skin-thumb ${rarityClass(s.rarity)}">
+                    <button class="wishlist-heart ${heartClass}" data-skin-id="${s.skin_id}" title="${currentSession ? 'Click: want it. Click again: got it.' : 'Sign in to track'}">${heartSymbol}</button>
+                    <img src="${s.image_url}" alt="${s.skin_name}" loading="lazy">
+                    <p class="sname">${s.skin_name.replace(card.name + ' ', '').replace(/^\(|\)$/g, '')}</p>
+                    <span class="rarity-pill ${rarityClass(s.rarity)}">${s.rarity}</span>
+                  </div>
+                `;}).join('')}</div>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('closeBtn').onclick = closeModal;
+  document.getElementById('backdrop').onclick = (e) => {
+    if (e.target.id === 'backdrop') closeModal();
+  };
+
+  document.querySelectorAll('.wishlist-heart').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const skinId = btn.dataset.skinId;
+      const changed = await cycleWishlist(skinId);
+      if (changed) openModal(card);
+    };
+  });
+}
+
+function closeModal() {
+  document.getElementById('modalRoot').innerHTML = '';
+  currentModalCard = null;
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  state.search = e.target.value;
+  render();
+});
+
+document.getElementById('seriesSelect').addEventListener('change', (e) => {
+  state.series = e.target.value;
+  render();
+});
+
+document.getElementById('iconicOnly').addEventListener('change', (e) => {
+  state.iconicOnly = e.target.checked;
+  render();
+});
+
+document.getElementById('clearFilters').addEventListener('click', () => {
+  state = { search: '', series: '', element: null, talent: null, iconicOnly: false, tab: state.tab };
+  document.getElementById('searchInput').value = '';
+  document.getElementById('seriesSelect').value = '';
+  document.getElementById('iconicOnly').checked = false;
+  render();
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    state.tab = tab.dataset.tab;
+    render();
+  });
+});
+
+/* ---------------- Cost Calculator ---------------- */
+
+function gradeTierOrder(grade) {
+  const g = gradeTiers.find(gt => gt.grade === grade);
+  return g ? g.tier_order : 1;
+}
+
+function computeStageCost(startIdx, targetIdx) {
+  if (targetIdx <= startIdx) return null;
+  const relevant = buildStages.filter(s => s.stage_order > startIdx && s.stage_order <= targetIdx);
+  const totals = { gold: 0, essence: 0, cores: 0, ethereal: 0, sacrifices: {} };
+  relevant.forEach(s => {
+    totals.gold += s.gold_cost;
+    totals.essence += s.essence_amount;
+    totals.cores += s.cores_cost;
+    totals.ethereal += s.ethereal_cores_cost;
+    if (s.sacrifice_rarity && s.sacrifice_count) {
+      totals.sacrifices[s.sacrifice_rarity] = (totals.sacrifices[s.sacrifice_rarity] || 0) + s.sacrifice_count;
+    }
+  });
+  return totals;
+}
+
+function computeGradeCost(startGrade, targetGrade) {
+  const startTier = gradeTierOrder(startGrade);
+  const targetTier = gradeTierOrder(targetGrade);
+  const steps = targetTier - startTier;
+  if (steps <= 0 || !regradeConfig) return null;
+  return {
+    steps,
+    bestCaseCores: steps * regradeConfig.cost_cores,
+    worstCaseCores: steps * regradeConfig.cost_cores * regradeConfig.pity_max
+  };
+}
+
+function fmt(n) {
+  return n.toLocaleString('en-US');
+}
+
+function renderCalculator() {
+  const content = document.getElementById('content');
+  const card = allCards.find(c => c.id === calcState.cardId);
+
+  const cardOptionsHtml = allCards.map(c =>
+    `<option value="${c.id}" ${c.id === calcState.cardId ? 'selected' : ''}>${c.name} (${c.series})</option>`
+  ).join('');
+
+  const milestoneOptions = (selected) => MILESTONES.map(m =>
+    `<option value="${m.idx}" ${m.idx === selected ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
+
+  const gradeOptions = (selected) => gradeTiers.map(g =>
+    `<option value="${g.grade}" ${g.grade === selected ? 'selected' : ''}>${g.grade}</option>`
+  ).join('');
+
+  content.innerHTML = `
+    <div class="calc-shell">
+      <div class="calc-panel" style="grid-column: 1 / -1;">
+        <h3>Card</h3>
+        <div class="calc-field">
+          <label>Choose a card (for element / essence type)</label>
+          <select id="calcCardSelect">
+            <option value="">— Select a card —</option>
+            ${cardOptionsHtml}
+          </select>
+        </div>
+        ${card ? `
+          <div class="calc-card-preview">
+            <img src="${card.image_url}" alt="${card.name}">
+            <div>
+              <div class="cname">${card.name}</div>
+              <div class="cel">${card.element} · ${card.series}</div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="calc-panel">
+        <h3>Starting point</h3>
+        <div class="calc-field">
+          <label>Rarity / stage</label>
+          <select id="startMilestone">${milestoneOptions(calcState.startMilestone)}</select>
+        </div>
+        <div class="calc-field">
+          <label>Grade</label>
+          <select id="startGrade">${gradeOptions(calcState.startGrade)}</select>
+        </div>
+      </div>
+
+      <div class="calc-panel">
+        <h3>Target</h3>
+        <div class="calc-field">
+          <label>Rarity / stage</label>
+          <select id="targetMilestone">${milestoneOptions(calcState.targetMilestone)}</select>
+        </div>
+        <div class="calc-field">
+          <label>Grade</label>
+          <select id="targetGrade">${gradeOptions(calcState.targetGrade)}</select>
+        </div>
+        <label class="calc-toggle">
+          <input type="checkbox" id="includeAttunement" ${calcState.includeAttunement ? 'checked' : ''}>
+          Include cost to guarantee Divine Attunement
+        </label>
+      </div>
+
+      <div class="calc-results" id="calcResults"></div>
+    </div>
+  `;
+
+  document.getElementById('calcCardSelect').onchange = (e) => {
+    calcState.cardId = e.target.value;
+    renderCalculator();
+  };
+  document.getElementById('startMilestone').onchange = (e) => {
+    calcState.startMilestone = parseInt(e.target.value, 10);
+    renderResults();
+  };
+  document.getElementById('targetMilestone').onchange = (e) => {
+    calcState.targetMilestone = parseInt(e.target.value, 10);
+    renderResults();
+  };
+  document.getElementById('startGrade').onchange = (e) => {
+    calcState.startGrade = e.target.value;
+    renderResults();
+  };
+  document.getElementById('targetGrade').onchange = (e) => {
+    calcState.targetGrade = e.target.value;
+    renderResults();
+  };
+  document.getElementById('includeAttunement').onchange = (e) => {
+    calcState.includeAttunement = e.target.checked;
+    renderResults();
+  };
+
+  renderResults();
+}
+
+function renderResults() {
+  const box = document.getElementById('calcResults');
+  if (!box) return;
+
+  const card = allCards.find(c => c.id === calcState.cardId);
+  if (!card) {
+    box.innerHTML = '<p class="calc-note">Pick a card above to calculate essence type and see costs.</p>';
+    return;
+  }
+
+  const stageCost = computeStageCost(calcState.startMilestone, calcState.targetMilestone);
+  const gradeCost = computeGradeCost(calcState.startGrade, calcState.targetGrade);
+
+  if (!stageCost && !gradeCost && !calcState.includeAttunement) {
+    box.innerHTML = '<p class="calc-note">Target is at or below the starting point — nothing to build.</p>';
+    return;
+  }
+
+  let warnings = '';
+  const targetCap = calcState.targetMilestone >= 2 ? rarityGradeCaps['Mythical'] : (calcState.targetMilestone === 1 ? rarityGradeCaps['Legendary'] : rarityGradeCaps['Exotic']);
+  if (targetCap && gradeTierOrder(calcState.targetGrade) > gradeTierOrder(targetCap.natural_max_grade) && calcState.targetGrade !== 'S+') {
+    warnings += `<div class="calc-warning">Heads up: ${calcState.targetGrade} may be above what that rarity normally allows.</div>`;
+  }
+
+  let gold = stageCost ? stageCost.gold : 0;
+  let essence = stageCost ? stageCost.essence : 0;
+  let cores = stageCost ? stageCost.cores : 0;
+  let ethereal = stageCost ? stageCost.ethereal : 0;
+
+  if (calcState.includeAttunement && attunementConfig) {
+    cores += attunementConfig.cores_cost * attunementConfig.pity_max;
+    essence += attunementConfig.essence_amount * attunementConfig.pity_max;
+  }
+
+  const essenceLabel = card.element + ' Essence';
+
+  let sacrificeHtml = '';
+  if (stageCost && Object.keys(stageCost.sacrifices).length) {
+    sacrificeHtml = `
+      <p class="clabel" style="margin-top:16px;">Sacrifice cards needed</p>
+      <div class="sacrifice-row">
+        ${Object.entries(stageCost.sacrifices).map(([rarity, count]) =>
+          `<span class="sacrifice-pill">${count} × ${rarity}</span>`
+        ).join('')}
+      </div>
+    `;
+  }
+
+  let gradeHtml = '';
+  if (gradeCost) {
+    gradeHtml = `
+      <p class="clabel" style="margin-top:16px;">Regrade (${calcState.startGrade} → ${calcState.targetGrade}, ${gradeCost.steps} tier${gradeCost.steps > 1 ? 's' : ''})</p>
+      <div class="cost-grid" style="margin-top:8px;">
+        <div class="cost-item">
+          <div class="clabel">Best case (lucky)</div>
+          <div class="cval">${fmt(gradeCost.bestCaseCores)} Cores</div>
+        </div>
+        <div class="cost-item">
+          <div class="clabel">Worst case (full pity)</div>
+          <div class="cval">${fmt(gradeCost.worstCaseCores)} Cores</div>
+        </div>
+      </div>
+      <p class="calc-note">Regrade only moves the grade up one tier per success, with a shared 10-attempt pity that guarantees the next tier. Actual cost falls somewhere between these two.</p>
+    `;
+  }
+
+  box.innerHTML = `
+    <h3>Total to build</h3>
+    ${warnings}
+    <div class="cost-grid">
+      <div class="cost-item"><div class="clabel">Gold</div><div class="cval">${fmt(gold)}</div></div>
+      <div class="cost-item"><div class="clabel">${essenceLabel}</div><div class="cval">${fmt(essence)}</div></div>
+      <div class="cost-item"><div class="clabel">Cores</div><div class="cval">${fmt(cores)}</div></div>
+      <div class="cost-item"><div class="clabel">Ethereal Cores</div><div class="cval">${fmt(ethereal)}</div></div>
+      ${calcState.includeAttunement && attunementConfig ? `<div class="cost-item"><div class="clabel">Attunement Material</div><div class="cval">${fmt(attunementConfig.attunement_material_cost * attunementConfig.pity_max)}</div></div>` : ''}
+    </div>
+    ${sacrificeHtml}
+    ${gradeHtml}
+    ${calcState.includeAttunement ? '<p class="calc-note">Attunement cost shown assumes going to full pity (10 attempts) to guarantee a Divine result, per your own account of how it works.</p>' : ''}
+  `;
+}
+
+/* ---------------- Teams ---------------- */
+
+async function loadTeams() {
+  if (!currentSession) { userTeams = []; return; }
+  const { data, error } = await sb.from('user_teams')
+    .select('*').eq('user_id', currentSession.user.id).order('created_at');
+  if (error) { console.error(error); return; }
+  userTeams = data || [];
+}
+
+function renderTeamsTab() {
+  const content = document.getElementById('content');
+
+  if (!currentSession) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <h2>Sign in to plan teams</h2>
+        <p>Teams are saved to your account so you can come back to them later.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (teamBuilder) {
+    renderTeamBuilder();
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="teams-toolbar">
+      <span class="count">${userTeams.length} saved team${userTeams.length === 1 ? '' : 's'}</span>
+      <button class="new-team-btn" id="newTeamBtn">+ New Team</button>
+    </div>
+    <div class="team-list" id="teamList"></div>
+  `;
+
+  document.getElementById('newTeamBtn').onclick = () => {
+    teamBuilder = { id: null, name: 'New Team', cardIds: [] };
+    render();
+  };
+
+  const listEl = document.getElementById('teamList');
+  if (userTeams.length === 0) {
+    listEl.innerHTML = '<div class="empty-state"><h2>No teams yet</h2><p>Build one to start planning.</p></div>';
+    return;
+  }
+
+  userTeams.forEach(team => {
+    const cards = team.card_ids.map(id => allCards.find(c => c.id === id)).filter(Boolean);
+    const row = document.createElement('div');
+    row.className = 'team-card';
+    row.innerHTML = `
+      <span class="tname">${team.name}</span>
+      <div class="team-thumb-row">
+        ${cards.map(c => `<img src="${c.image_url}" alt="${c.name}" title="${c.name}">`).join('')}
+      </div>
+      <div class="team-card-actions">
+        <button class="team-edit-btn" data-id="${team.id}">Edit</button>
+        <button class="team-delete-btn" data-id="${team.id}">Delete</button>
+      </div>
+    `;
+    row.querySelector('.team-edit-btn').onclick = () => {
+      teamBuilder = { id: team.id, name: team.name, cardIds: [...team.card_ids] };
+      render();
+    };
+    row.querySelector('.team-delete-btn').onclick = () => deleteTeam(team.id);
+    listEl.appendChild(row);
+  });
+}
+
+function renderTeamBuilder() {
+  const content = document.getElementById('content');
+
+  content.innerHTML = `
+    <div class="team-builder-shell">
+      <div class="builder-panel">
+        <h3>Pick cards (max ${MAX_TEAM_SIZE})</h3>
+        <div class="search-box" style="margin-bottom:14px;">
+          <input type="text" id="teamSearchInput" placeholder="Search cards…" value="${teamSearch}">
+        </div>
+        <div class="mini-grid" id="miniGrid"></div>
+      </div>
+
+      <div class="builder-panel">
+        <input type="text" class="team-name-input" id="teamNameInput" value="${teamBuilder.name}">
+        <p class="slots-label">Starting 5</p>
+        <div class="team-slots" id="teamSlotsMain"></div>
+        <p class="slots-label">Backups / flex (optional)</p>
+        <div class="team-slots" id="teamSlotsBench"></div>
+        <div class="builder-actions">
+          <button class="builder-save" id="saveTeamBtn">Save Team</button>
+          <button class="builder-cancel" id="cancelTeamBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('teamSearchInput').addEventListener('input', (e) => {
+    teamSearch = e.target.value;
+    renderMiniGrid();
+  });
+
+  document.getElementById('teamNameInput').addEventListener('input', (e) => {
+    teamBuilder.name = e.target.value;
+  });
+
+  document.getElementById('saveTeamBtn').onclick = saveTeam;
+  document.getElementById('cancelTeamBtn').onclick = () => {
+    teamBuilder = null;
+    teamSearch = '';
+    render();
+  };
+
+  renderMiniGrid();
+  renderSlots();
+}
+
+function renderMiniGrid() {
+  const miniGrid = document.getElementById('miniGrid');
+  if (!miniGrid) return;
+  miniGrid.innerHTML = '';
+
+  const filteredCards = teamSearch.trim()
+    ? allCards.filter(c => c.name.toLowerCase().includes(teamSearch.trim().toLowerCase()))
+    : allCards;
+
+  filteredCards.slice(0, 200).forEach(card => {
+    const inTeam = teamBuilder.cardIds.includes(card.id);
+    const atMax = teamBuilder.cardIds.length >= MAX_TEAM_SIZE;
+    const el = document.createElement('div');
+    el.className = 'mini-card' + (inTeam ? ' in-team' : '') + (!inTeam && atMax ? ' disabled' : '');
+    el.innerHTML = `<img src="${card.image_url}" alt="${card.name}"><div class="mname">${card.name}</div>`;
+    el.onclick = () => {
+      if (inTeam) {
+        teamBuilder.cardIds = teamBuilder.cardIds.filter(id => id !== card.id);
+      } else if (!atMax) {
+        teamBuilder.cardIds.push(card.id);
+      } else {
+        return;
+      }
+      renderMiniGrid();
+      renderSlots();
+    };
+    miniGrid.appendChild(el);
+  });
+}
+
+function renderSlots() {
+  const fillSlots = (containerId, startIdx, endIdx) => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = '';
+    for (let i = startIdx; i < endIdx; i++) {
+      const cardId = teamBuilder.cardIds[i];
+      const card = cardId ? allCards.find(c => c.id === cardId) : null;
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      if (card) {
+        slot.innerHTML = `<img src="${card.image_url}" alt="${card.name}"><button class="slot-remove" data-id="${card.id}">✕</button>`;
+        slot.querySelector('.slot-remove').onclick = () => {
+          teamBuilder.cardIds = teamBuilder.cardIds.filter(id => id !== card.id);
+          renderMiniGrid();
+          renderSlots();
+        };
+      } else {
+        slot.innerHTML = '<span class="empty-slot">+</span>';
+      }
+      el.appendChild(slot);
+    }
+  };
+
+  fillSlots('teamSlotsMain', 0, STARTING_FIVE);
+  fillSlots('teamSlotsBench', STARTING_FIVE, MAX_TEAM_SIZE);
+}
+
+async function saveTeam() {
+  const payload = {
+    user_id: currentSession.user.id,
+    name: teamBuilder.name.trim() || 'Unnamed Team',
+    card_ids: teamBuilder.cardIds,
+    updated_at: new Date().toISOString()
+  };
+
+  let error;
+  if (teamBuilder.id) {
+    ({ error } = await sb.from('user_teams').update(payload).eq('id', teamBuilder.id));
+  } else {
+    ({ error } = await sb.from('user_teams').insert(payload));
+  }
+
+  if (error) { console.error(error); return; }
+
+  teamBuilder = null;
+  teamSearch = '';
+  await loadTeams();
+  render();
+}
+
+async function deleteTeam(teamId) {
+  if (!confirm('Delete this team? This cannot be undone.')) return;
+  const { error } = await sb.from('user_teams').delete().eq('id', teamId);
+  if (error) { console.error(error); return; }
+  await loadTeams();
+  render();
+}
+
+/* ---------------- Guides ---------------- */
+
+const GUIDES = [
+  {
+    title: 'Team Building Basics',
+    body: `
+      <p>Pick cards you actually like — this is a game you're meant to have fun with. You can check full card info anytime at <a href="https://luvi-game.com/cards" target="_blank" rel="noopener">luvi-game.com/cards</a>.</p>
+      <p class="g-note">Some cards are marked <strong>ICONIC</strong>, which makes them more expensive to build — factor that in before committing resources to one.</p>
+      <p><strong>Build 5 cards of the same element</strong> as your core team. A solid core generally looks like:</p>
+      <ul>
+        <li><strong>Support</strong> with <em>Remembrance</em></li>
+        <li><strong>Support</strong> with <em>War Chant</em></li>
+        <li><strong>Mastermind</strong> with <em>Mind Games</em></li>
+      </ul>
+      <p>Then pick one DPS + Tank combo depending on what you're pushing:</p>
+      <ul>
+        <li><strong>Frontline</strong> with <em>Provoke</em> + <strong>Phantom</strong> with <em>Lingering Venom</em> — solid for Tier 3 raids</li>
+        <li><strong>Frontline</strong> with <em>Opening Guard</em> + <strong>Duelist</strong> with <em>Mortal Wound</em> — solid for Tier 4 raids</li>
+      </ul>
+      <p>Invest in <strong>one good Legendary or Exotic card (Grade B or better)</strong> rather than spreading resources thin across cards you won't actually use.</p>
+      <p class="g-note">In Discord: start with <code>createteam</code>.</p>
+    `
+  },
+  {
+    title: 'Additional / Situational Abilities',
+    body: `
+      <p>Some raids and floors reward a specific extra ability. These aren't a priority unless you're chasing a hard clear:</p>
+      <ul>
+        <li><strong>Duelist — True Strike:</strong> guarantees evasion RNG doesn't wreck your damage — useful for Smokescreen raids.</li>
+        <li><strong>Support — Mending Light:</strong> worth running when you want all 3 Supports active instead of leaning on Remembrance, depending on the fight.</li>
+      </ul>
+    `
+  },
+  {
+    title: 'Currencies — Know This or Waste Them',
+    body: `
+      <ul>
+        <li><strong>Gold</strong> — evolving, awakening, transfers</li>
+        <li><strong>Elemental Essence</strong> — evolving and awakening (must match the card's own element)</li>
+        <li><strong>Cores</strong> — main trading currency plus most upgrades</li>
+        <li><strong>Ethereal Cores</strong> — critical for Awakening; earn more by voting every 12 hours</li>
+      </ul>
+    `
+  },
+  {
+    title: 'The Rarity Ladder: Exotic → Legendary → Mythical',
+    body: `
+      <p>Every card climbs the same ladder before it can start Awakening. Each step consumes gold, element-matching essence, cores, and <strong>another copy of the same card</strong> as a sacrifice.</p>
+      <ul>
+        <li><strong>Exotic → Legendary:</strong> 200,000 Gold, 2,000 Essence, 4 Cores, sacrifice 1 Exotic copy</li>
+        <li><strong>Legendary → Mythical:</strong> 250,000 Gold, 2,500 Essence, 5 Cores, sacrifice 1 Legendary copy — the card must be <strong>Level 100</strong> first</li>
+      </ul>
+      <p class="g-note">Use the Cost Calculator tab to total this up for any card automatically.</p>
+    `
+  },
+  {
+    title: 'Awakening (Mythical, Stages 1–5)',
+    body: `
+      <p>Once a card is a <strong>Level 100 Mythical</strong>, it can begin Awakening. Each of the 5 stages sacrifices a plain Legendary-rarity card and grants +10 level cap, +1,000 HP, and +100 ATK.</p>
+      <ul>
+        <li>Stage 1: 200,000 Gold, 2,500 Essence, 5 Cores, 1 Ethereal Core</li>
+        <li>Stage 2: 250,000 Gold, 3,000 Essence, 5 Cores, 2 Ethereal Cores</li>
+        <li>Stage 3: 300,000 Gold, 3,500 Essence, 5 Cores, 3 Ethereal Cores</li>
+        <li>Stage 4: 350,000 Gold, 4,000 Essence, 5 Cores, 4 Ethereal Cores</li>
+        <li>Stage 5: 400,000 Gold, 4,500 Essence, 5 Cores, 5 Ethereal Cores</li>
+      </ul>
+      <p class="g-note">Each stage sacrifices one Legendary copy — that's 5 extra Legendaries on top of the one used to evolve into Mythical in the first place.</p>
+    `
+  },
+  {
+    title: 'Overdrive',
+    body: `
+      <p>The final push after Awaken 5. A flat, one-time cost with no sacrifice card involved:</p>
+      <ul>
+        <li>2,500,000 Gold, 10,000 Essence, 25 Cores, 10 Ethereal Cores</li>
+      </ul>
+    `
+  },
+  {
+    title: 'Attunement',
+    body: `
+      <p>A separate system available once a card is <strong>Mythical</strong>. Each attempt costs 5 Cores, 5 Attunement Material, and 2,500 Essence — and gives a random result.</p>
+      <p>There's a pity counter from 0–10. Hitting 10 <strong>guarantees a Divine result</strong>. Since that's the outcome that actually matters, the Cost Calculator's Attunement toggle assumes going to full pity: 10× the per-attempt cost.</p>
+    `
+  },
+  {
+    title: 'Divine Attunements: Strengths & Weaknesses',
+    body: `
+      <p>Before picking a Divine Attunement, it helps to know where each one excels and where it falls short.</p>
+      <ul>
+        <li><strong>Vampiric Edge</strong> — high damage ceiling, but low consistency; if crit RNG doesn't cooperate, damage suffers. Useless in Necrotic Touch raids, and less reliable in disruption raids since it can't heal without landing an attack.</li>
+        <li><strong>Executioner</strong> — a huge stat boost: +25% Attack and +20% Crit Chance. Can hurt DPS cards in Retaliating Armor raids, since hitting harder there means dying faster.</li>
+        <li><strong>Unbreakable</strong> — the most consistent Divine, with great survivability. Lower damage ceiling than Vampiric Edge or Executioner, but a much higher floor — it performs better on bad RNG, even if it won't peak as high on good RNG.</li>
+        <li><strong>Soul Link</strong> — paired with a Remembrance card, the Soul Link holder heals a large amount to your lowest-HP ally (usually your DPS). <span class="sub-note">Possibly useless in Necrotic Touch raids — unconfirmed, still needs double-checking.</span></li>
+        <li><strong>Death's Grasp</strong> — survives even longer than Unbreakable thanks to a built-in revive, and negates damage taken on that revive. Worth noting it may let a Blood Harvest boss heal more as a side effect.</li>
+      </ul>
+    `
+  },
+  {
+    title: 'Best Divines for Each Role',
+    body: `
+      <p><strong>Frontline</strong></p>
+      <ul>
+        <li><strong>Opening Guard</strong> → Executioner<span class="sub-note">Good DPS stats, and lets Opening Guard die first as intended — you can skip Overdriving it entirely.</span></li>
+        <li><strong>Provoke</strong> → Unbreakable<span class="sub-note">Provoke wants to tank more damage, so extra HP and damage reduction is ideal.</span></li>
+      </ul>
+      <p><strong>Support</strong></p>
+      <ul>
+        <li><strong>Mending Light</strong> → Soul Link<span class="sub-note">Supports your DPS harder, healing it more every 3 turns.</span></li>
+        <li><strong>War Chant</strong> → Unbreakable, Soul Link, Death's Grasp, or Executioner<span class="sub-note">Unbreakable/Death's Grasp add survivability, Soul Link supports your DPS better, and Executioner is worth it on an Ethereal copy if you want more damage.</span></li>
+        <li><strong>Remembrance</strong> → Unbreakable<span class="sub-note">Remembrance should always die last.</span></li>
+      </ul>
+      <p><strong>Mastermind</strong></p>
+      <ul>
+        <li><strong>Checkmate</strong> → Executioner<span class="sub-note">Tower-only ability, so maximizing damage is the priority.</span></li>
+        <li><strong>Mind Games</strong> → Unbreakable or Executioner<span class="sub-note">Unbreakable if non-Ethereal for survivability; Executioner if Ethereal, so it can die before your DPS does.</span></li>
+        <li><strong>Blackmail</strong> → Unbreakable<span class="sub-note">Better survivability, more chances to land a silence.</span></li>
+        <li><strong>Pieces in Play</strong> → Unbreakable or Soul Link<span class="sub-note">Unbreakable on non-Ethereal to survive longer; on Ethereal, run Soul Link instead since Unbreakable would give it more HP than its support role needs.</span></li>
+      </ul>
+      <p><strong>Duelist</strong></p>
+      <ul>
+        <li><strong>Riposte</strong> → Unbreakable, Vampiric Edge, or Executioner<span class="sub-note">Unbreakable for consistent damage and survivability, Vampiric Edge for a higher ceiling, Executioner specifically for Tower.</span></li>
+        <li><strong>Bloodlust</strong> → Unbreakable or Executioner<span class="sub-note">Unbreakable is preferred since it keeps the option to reassign to another card later; Executioner is fine for the stats but locks that in.</span></li>
+        <li><strong>True Strike</strong> → Unbreakable or Vampiric Edge<span class="sub-note">Unbreakable preferred since True Strike needs to stay alive as long as possible in Smokescreen raids; Vampiric Edge is also fine.</span></li>
+        <li><strong>Mortal Wound</strong> → Unbreakable or Vampiric Edge<span class="sub-note">Mortal Wound doesn't need to live as long as True Strike, so Vampiric Edge is viable — Unbreakable still shines in Weakness / Retaliating Armor / Overcharged Strike raids.</span></li>
+      </ul>
+      <p><strong>Phantom</strong></p>
+      <ul>
+        <li><strong>Phantom Rebound</strong> → Executioner<span class="sub-note">An exceptionally strong pairing.</span></li>
+        <li><strong>Lingering Venom</strong> → Unbreakable or Vampiric Edge<span class="sub-note">Unbreakable lets it survive much better in Tier 4 raids for higher DOT stacks; Vampiric Edge gives more healing, but Unbreakable's consistency is generally preferred.</span></li>
+      </ul>
+      <p><strong>What order should I attune?</strong></p>
+      <p>DPS → Remembrance → War Chant → Mind Games (or other DPS cards) → Opening Guard <span class="sub-note">Opening Guard always goes last, and isn't required to Overdrive at all.</span></p>
+    `
+  },
+  {
+    title: 'Regrade (Grade D → S+)',
+    body: `
+      <p>Regrade rerolls a card's grade — a separate flat HP/ATK bonus layer — for a flat 2 Cores per attempt. Grade can only move up one tier per attempt, and stats reroll within that tier's range each time.</p>
+      <ul>
+        <li>D: +400 HP / +25 ATK</li>
+        <li>C: +500 HP / +50 ATK</li>
+        <li>B: +700 HP / +100 ATK</li>
+        <li>A: +1,000 HP / +200 ATK</li>
+        <li>S: +1,400 HP / +300 ATK</li>
+        <li>S+: +2,000 HP / +400 ATK (only reachable via regrade)</li>
+      </ul>
+      <p>Grade ceiling depends on rarity — Common/Uncommon cap at C, Rare at B, Exotic at A, Legendary/Mythical at S normally (S+ needs regrade regardless of rarity).</p>
+      <p>There's a shared 10-attempt pity: a regrade that doesn't raise the grade adds to pity, and at 10/10 the next attempt is guaranteed to bump the grade one tier. It can take anywhere from 1 to 10 tries per tier — the Cost Calculator shows both the lucky (best-case) and full-pity (worst-case) numbers.</p>
+    `
+  },
+  {
+    title: 'Building a Roster (Planner Tips)',
+    body: `
+      <p>The actual in-game team size is <strong>5</strong>. The Teams tab gives you 5 extra flex slots on top of that (10 total) so you can plan around swaps you might actually want — like keeping 2 Duelists to interchange, adding a Phantom, or running 3 Supports instead of 2 depending on the fight.</p>
+      <p>Save as many teams as you want, so you can keep separate plans for different comps without losing track of any of them.</p>
+    `
+  },
+  {
+    title: 'Quick Tips',
+    body: `
+      <ul>
+        <li>Level <strong>one strong card</strong> early — reaching Level 100 helps a lot.</li>
+        <li>Cards on expedition <strong>can't clash or boss</strong> while they're away.</li>
+        <li>Focus on the basics before Level 20.</li>
+        <li>Trading unlocks at <strong>Level 20</strong> — save resources until then rather than spending early.</li>
+        <li>You can always ask your community for help with raids — post which cards you're building and what raids you're aiming for so people can look out for you.</li>
+      </ul>
+      <p class="g-note">In Discord: use the bot's help command, or ping the helper role, for any questions.</p>
+    `
+  }
+];
+
+function renderGuides() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="guides-list">
+      ${GUIDES.map((g, i) => `
+        <details class="guide-item" ${i === 0 ? 'open' : ''}>
+          <summary>${g.title}</summary>
+          <div class="guide-body">${g.body}</div>
+        </details>
+      `).join('')}
+    </div>
+  `;
+}
+
+/* ---------------- My Wishlist ---------------- */
+
+function renderWishlistTab() {
+  const content = document.getElementById('content');
+
+  if (!currentSession) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <h2>Sign in to see your wishlist</h2>
+        <p>Heart skins from any card's detail view and they'll show up here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const entries = Object.values(wishlistBySkinId)
+    .map(row => {
+      const skin = allSkins.find(s => s.skin_id === row.skin_id);
+      if (!skin) return null;
+      const card = skin.card_id ? allCards.find(c => c.id === skin.card_id) : null;
+      return { row, skin, card };
+    })
+    .filter(Boolean);
+
+  const wanted = entries.filter(e => e.row.wanted && !e.row.obtained);
+  const obtained = entries.filter(e => e.row.obtained);
+
+  if (entries.length === 0) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <h2>Nothing hearted yet</h2>
+        <p>Open any card and click the heart on a skin to start tracking it here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const renderGroup = (title, list) => {
+    if (list.length === 0) return '';
+    return `
+      <p class="wish-section-title">${title} (${list.length})</p>
+      <div class="wish-grid">
+        ${list.map(({ row, skin, card }) => `
+          <div class="wish-item ${rarityClass(skin.rarity)}">
+            <img src="${skin.image_url}" alt="${skin.skin_name}">
+            <div class="wcard">${card ? card.name : skin.character_name}</div>
+            <div class="wname">${skin.skin_name}</div>
+            <div class="wish-actions">
+              ${row.obtained
+                ? `<button class="wish-btn" data-action="unobtain" data-skin="${skin.skin_id}">Mark wanted</button>`
+                : `<button class="wish-btn" data-action="obtain" data-skin="${skin.skin_id}">Got it</button>`
+              }
+              <button class="wish-btn danger" data-action="remove" data-skin="${skin.skin_id}">Remove</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  };
+
+  content.innerHTML = renderGroup('Wanted', wanted) + renderGroup('Obtained', obtained);
+
+  content.querySelectorAll('.wish-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const skinId = btn.dataset.skin;
+      const action = btn.dataset.action;
+      const existing = wishlistBySkinId[skinId];
+
+      if (action === 'remove') {
+        await sb.from('user_skin_wishlist').delete()
+          .eq('user_id', currentSession.user.id).eq('skin_id', skinId);
+        delete wishlistBySkinId[skinId];
+      } else if (action === 'obtain') {
+        const { data } = await sb.from('user_skin_wishlist')
+          .upsert({ user_id: currentSession.user.id, skin_id: skinId, wanted: true, obtained: true, updated_at: new Date().toISOString() }, { onConflict: 'user_id,skin_id' })
+          .select().single();
+        wishlistBySkinId[skinId] = data;
+      } else if (action === 'unobtain') {
+        const { data } = await sb.from('user_skin_wishlist')
+          .upsert({ user_id: currentSession.user.id, skin_id: skinId, wanted: true, obtained: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id,skin_id' })
+          .select().single();
+        wishlistBySkinId[skinId] = data;
+      }
+      renderWishlistTab();
+    };
+  });
+}
+
+loadData();
+</script>
+
+</body>
+</html>
