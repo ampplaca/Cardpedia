@@ -1542,9 +1542,10 @@ function openProfileModal() {
     }
 
     saveBtn.disabled = true;
+    // Upsert rather than update — if this account somehow never got a profiles row
+    // (e.g. the signup trigger didn't fire), this creates it instead of failing.
     const { data, error } = await sb.from('profiles')
-      .update({ username: newUsername })
-      .eq('id', currentSession.user.id)
+      .upsert({ id: currentSession.user.id, username: newUsername }, { onConflict: 'id' })
       .select()
       .single();
 
