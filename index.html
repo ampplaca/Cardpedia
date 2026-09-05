@@ -1003,6 +1003,86 @@
     border-top: 1px solid var(--line);
   }
 
+  .team-thumb-tag {
+    display: block;
+    font-size: 9px;
+    margin-top: 2px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .team-thumb-tag.ethereal { background: rgba(111,198,217,0.16); color: var(--el-ice); }
+  .team-thumb-tag.divine { background: rgba(217,95,196,0.16); color: #d95fc4; }
+
+  .slot-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .slot-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--surface-2);
+    border-radius: 7px;
+    padding: 8px 12px;
+  }
+
+  .sdr-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    min-width: 110px;
+  }
+
+  .sdr-ethereal {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sdr-ethereal input { accent-color: var(--el-ice); width: 14px; height: 14px; }
+
+  .sdr-divine {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    padding: 6px 10px;
+    outline: none;
+  }
+  .sdr-divine:focus { border-color: var(--gold); }
+
+  .sdr-skin {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    padding: 6px 10px;
+    outline: none;
+    min-width: 150px;
+  }
+  .sdr-skin:focus { border-color: var(--gold); }
+
+  .sdr-no-skins {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-style: italic;
+  }
+
   .team-builder-shell {
     display: grid;
     grid-template-columns: 340px 1fr;
@@ -1582,6 +1662,18 @@ function getAcquisitionEstimate(rarity, isIconic, grade) {
 
 const MAX_TEAM_SIZE = 10;
 const STARTING_FIVE = 5;
+
+const DIVINE_ATTUNEMENTS = ['Vampiric Edge', 'Executioner', 'Unbreakable', 'Soul Link', "Death's Grasp"];
+
+function normalizeSlot(s) {
+  return {
+    cardId: s.cardId,
+    milestone: s.milestone ?? 0,
+    ethereal: s.ethereal || false,
+    divineAttunement: s.divineAttunement || '',
+    skinId: s.skinId || null
+  };
+}
 let userTeams = [];
 let teamBuilder = null; // { id: existing-id-or-null, name, slots: [{cardId, milestone}] }
 let teamSearch = '';
@@ -2605,7 +2697,7 @@ function renderTeamsTab() {
   }
 
   userTeams.forEach(team => {
-    const slots = (team.slots || []).map(s => ({ ...s, card: allCards.find(c => c.id === s.cardId) })).filter(s => s.card);
+    const slots = (team.slots || []).map(s => ({ ...normalizeSlot(s), card: allCards.find(c => c.id === s.cardId) })).filter(s => s.card);
     const { totals } = computeTeamCost(slots.map(s => ({ cardId: s.card.id, milestone: s.milestone })));
     const essenceSummary = Object.entries(totals.essenceByElement).map(([el, amt]) => `${fmt(amt)} ${el}`).join(', ');
     const row = document.createElement('div');
@@ -2613,12 +2705,17 @@ function renderTeamsTab() {
     row.innerHTML = `
       <span class="tname">${team.name}</span>
       <div class="team-thumb-row">
-        ${slots.map(s => `
+        ${slots.map(s => {
+          const displaySkin = s.skinId ? allSkins.find(sk => sk.skin_id === s.skinId) : null;
+          const imgUrl = displaySkin ? displaySkin.image_url : s.card.image_url;
+          return `
           <div class="team-thumb-item">
-            <img src="${s.card.image_url}" alt="${s.card.name}" title="${s.card.name}" loading="lazy">
+            <img src="${imgUrl}" alt="${s.card.name}" title="${s.card.name}" loading="lazy" style="cursor:pointer;" data-card="${s.card.id}">
             <span class="team-thumb-milestone">${MILESTONES[s.milestone]?.shortLabel || MILESTONES[s.milestone]?.label || ''}</span>
+            ${s.ethereal ? '<span class="team-thumb-tag ethereal">Ethereal</span>' : ''}
+            ${s.divineAttunement ? `<span class="team-thumb-tag divine">${s.divineAttunement}</span>` : ''}
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
       <div class="team-card-actions">
         <button class="team-edit-btn" data-id="${team.id}">Edit</button>
@@ -2631,8 +2728,14 @@ function renderTeamsTab() {
         }
       </div>
     `;
+    row.querySelectorAll('.team-thumb-item img').forEach(img => {
+      img.onclick = () => {
+        const card = allCards.find(c => c.id === img.dataset.card);
+        if (card) openModal(card);
+      };
+    });
     row.querySelector('.team-edit-btn').onclick = () => {
-      teamBuilder = { id: team.id, name: team.name, slots: (team.slots || []).map(s => ({ ...s })) };
+      teamBuilder = { id: team.id, name: team.name, slots: (team.slots || []).map(normalizeSlot) };
       render();
     };
     row.querySelector('.team-delete-btn').onclick = () => deleteTeam(team.id);
@@ -2659,6 +2762,9 @@ function renderTeamBuilder() {
         <div class="team-slots" id="teamSlotsMain"></div>
         <p class="slots-label">Backups / flex (optional)</p>
         <div class="team-slots" id="teamSlotsBench"></div>
+
+        <div id="slotDetailsSection"></div>
+
         <div class="builder-actions">
           <button class="builder-save" id="saveTeamBtn">Save Team</button>
           <button class="builder-cancel" id="cancelTeamBtn">Cancel</button>
@@ -2666,6 +2772,10 @@ function renderTeamBuilder() {
         <div id="teamCostSection"></div>
       </div>
     </div>
+
+    <datalist id="divineList">
+      ${DIVINE_ATTUNEMENTS.map(d => `<option value="${d}">`).join('')}
+    </datalist>
   `;
 
   document.getElementById('teamSearchInput').addEventListener('input', (e) => {
@@ -2686,6 +2796,7 @@ function renderTeamBuilder() {
 
   renderMiniGrid();
   renderSlots();
+  renderSlotDetails();
   renderTeamCost();
 }
 
@@ -2710,12 +2821,13 @@ function renderMiniGrid() {
       if (inTeam) {
         teamBuilder.slots = teamBuilder.slots.filter(s => s.cardId !== card.id);
       } else if (!atMax) {
-        teamBuilder.slots.push({ cardId: card.id, milestone: 0 });
+        teamBuilder.slots.push({ cardId: card.id, milestone: 0, ethereal: false, divineAttunement: '', skinId: null });
       } else {
         return;
       }
       renderMiniGrid();
       renderSlots();
+      renderSlotDetails();
       renderTeamCost();
     };
     miniGrid.appendChild(el);
@@ -2739,16 +2851,20 @@ function renderSlots() {
       const slot = document.createElement('div');
       slot.className = 'slot';
       if (card) {
+        const displaySkin = slotData.skinId ? allSkins.find(sk => sk.skin_id === slotData.skinId) : null;
+        const imgUrl = displaySkin ? displaySkin.image_url : card.image_url;
         slot.innerHTML = `
-          <img src="${card.image_url}" alt="${card.name}" loading="lazy">
+          <img src="${imgUrl}" alt="${card.name}" loading="lazy" style="cursor:pointer;">
           <button class="slot-remove" data-id="${card.id}">✕</button>
           <div class="slot-name">${card.name}</div>
           <select class="slot-milestone">${milestoneOptionsHtml(slotData.milestone)}</select>
         `;
+        slot.querySelector('img').onclick = () => openModal(card);
         slot.querySelector('.slot-remove').onclick = () => {
           teamBuilder.slots = teamBuilder.slots.filter(s => s.cardId !== card.id);
           renderMiniGrid();
           renderSlots();
+          renderSlotDetails();
           renderTeamCost();
         };
         slot.querySelector('.slot-milestone').onchange = (e) => {
@@ -2766,29 +2882,101 @@ function renderSlots() {
   fillSlots('teamSlotsBench', STARTING_FIVE, MAX_TEAM_SIZE);
 }
 
+function renderSlotDetails() {
+  const box = document.getElementById('slotDetailsSection');
+  if (!box) return;
+
+  const filled = teamBuilder.slots.filter(s => allCards.find(c => c.id === s.cardId));
+  if (filled.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = `
+    <p class="slots-label" style="margin-top:18px;">Card details</p>
+    <div class="slot-details-list">
+      ${filled.map(s => {
+        const card = allCards.find(c => c.id === s.cardId);
+        const obtainedSkins = allSkins.filter(sk => sk.card_id === card.id && wishlistBySkinId[sk.skin_id]?.obtained);
+        return `
+          <div class="slot-detail-row" data-card="${card.id}">
+            <span class="sdr-name">${card.name}</span>
+            <label class="sdr-ethereal">
+              <input type="checkbox" ${s.ethereal ? 'checked' : ''}>
+              Ethereal
+            </label>
+            <input type="text" class="sdr-divine" list="divineList" placeholder="Divine Attunement (none)" value="${s.divineAttunement || ''}">
+            ${obtainedSkins.length > 0
+              ? `<select class="sdr-skin">
+                  <option value="">Default art</option>
+                  ${obtainedSkins.map(sk => `<option value="${sk.skin_id}" ${s.skinId === sk.skin_id ? 'selected' : ''}>${sk.skin_name}</option>`).join('')}
+                </select>`
+              : `<span class="sdr-no-skins">No obtained skins for this card</span>`
+            }
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  box.querySelectorAll('.slot-detail-row').forEach(row => {
+    const cardId = row.dataset.card;
+    const slotData = teamBuilder.slots.find(s => s.cardId === cardId);
+    row.querySelector('.sdr-ethereal input').onchange = (e) => {
+      slotData.ethereal = e.target.checked;
+    };
+    row.querySelector('.sdr-divine').addEventListener('input', (e) => {
+      slotData.divineAttunement = e.target.value;
+      renderTeamCost();
+    });
+    const skinSelect = row.querySelector('.sdr-skin');
+    if (skinSelect) {
+      skinSelect.onchange = (e) => {
+        slotData.skinId = e.target.value || null;
+        renderSlots();
+      };
+    }
+  });
+}
+
 const FULLY_BUILT_MILESTONE = MILESTONES.length - 1; // Overdrive
 
 // Sums the cost to take every filled team slot from its current milestone up to
-// fully Overdriven, grouping essence by element (since a team can mix elements)
-// and sacrifice-card counts by rarity.
+// fully Overdriven, plus the cost to guarantee a Divine Attunement for any card
+// that doesn't already have one recorded — grouping essence by element (since a
+// team can mix elements) and sacrifice-card counts by rarity.
 function computeTeamCost(slots) {
   const perCard = [];
-  const totals = { gold: 0, cores: 0, ethereal: 0, essenceByElement: {}, sacrifices: {} };
+  const totals = { gold: 0, cores: 0, ethereal: 0, attunementMaterial: 0, essenceByElement: {}, sacrifices: {} };
 
   slots.forEach(s => {
     const card = allCards.find(c => c.id === s.cardId);
     if (!card) return;
-    const cost = computeStageCost(s.milestone, FULLY_BUILT_MILESTONE);
-    perCard.push({ card, milestone: s.milestone, cost });
-    if (!cost) return;
 
-    totals.gold += cost.gold;
-    totals.cores += cost.cores;
-    totals.ethereal += cost.ethereal;
-    totals.essenceByElement[card.element] = (totals.essenceByElement[card.element] || 0) + cost.essence;
-    Object.entries(cost.sacrifices).forEach(([rarity, count]) => {
-      totals.sacrifices[rarity] = (totals.sacrifices[rarity] || 0) + count;
-    });
+    const buildCost = computeStageCost(s.milestone, FULLY_BUILT_MILESTONE);
+    const needsAttunement = !s.divineAttunement;
+    const attunementCost = (needsAttunement && attunementConfig) ? {
+      cores: attunementConfig.cores_cost * attunementConfig.pity_max,
+      essence: attunementConfig.essence_amount * attunementConfig.pity_max,
+      attunementMaterial: attunementConfig.attunement_material_cost * attunementConfig.pity_max
+    } : null;
+
+    perCard.push({ card, milestone: s.milestone, divineAttunement: s.divineAttunement, buildCost, attunementCost });
+
+    if (buildCost) {
+      totals.gold += buildCost.gold;
+      totals.cores += buildCost.cores;
+      totals.ethereal += buildCost.ethereal;
+      totals.essenceByElement[card.element] = (totals.essenceByElement[card.element] || 0) + buildCost.essence;
+      Object.entries(buildCost.sacrifices).forEach(([rarity, count]) => {
+        totals.sacrifices[rarity] = (totals.sacrifices[rarity] || 0) + count;
+      });
+    }
+    if (attunementCost) {
+      totals.cores += attunementCost.cores;
+      totals.attunementMaterial += attunementCost.attunementMaterial;
+      totals.essenceByElement[card.element] = (totals.essenceByElement[card.element] || 0) + attunementCost.essence;
+    }
   });
 
   return { perCard, totals };
@@ -2806,16 +2994,29 @@ function renderTeamCost() {
 
   const { perCard, totals } = computeTeamCost(filled);
 
-  const perCardHtml = perCard.map(({ card, milestone, cost }) => `
-    <div class="team-cost-row">
-      <span class="tcr-name">${card.name}</span>
-      <span class="tcr-status">${MILESTONES[milestone].shortLabel}</span>
-      ${cost
-        ? `<span class="tcr-cost">${fmt(cost.gold)} Gold · ${fmt(cost.essence)} ${card.element} Essence · ${fmt(cost.cores)} Cores${cost.ethereal ? ' · ' + fmt(cost.ethereal) + ' Ethereal' : ''}</span>`
-        : `<span class="tcr-cost tcr-done">Fully built ✓</span>`
-      }
-    </div>
-  `).join('');
+  const perCardHtml = perCard.map(({ card, milestone, divineAttunement, buildCost, attunementCost }) => {
+    const statusLabel = MILESTONES[milestone].shortLabel + (divineAttunement ? ` · ${divineAttunement}` : ' · Needs Attunement');
+
+    const combinedGold = buildCost ? buildCost.gold : 0;
+    const combinedEssence = (buildCost ? buildCost.essence : 0) + (attunementCost ? attunementCost.essence : 0);
+    const combinedCores = (buildCost ? buildCost.cores : 0) + (attunementCost ? attunementCost.cores : 0);
+    const combinedEthereal = buildCost ? buildCost.ethereal : 0;
+    const combinedMaterial = attunementCost ? attunementCost.attunementMaterial : 0;
+
+    const nothingLeft = !buildCost && !attunementCost;
+
+    const costLine = nothingLeft
+      ? `<span class="tcr-cost tcr-done">Fully built & attuned ✓</span>`
+      : `<span class="tcr-cost">${fmt(combinedGold)} Gold · ${fmt(combinedEssence)} ${card.element} Essence · ${fmt(combinedCores)} Cores${combinedEthereal ? ' · ' + fmt(combinedEthereal) + ' Ethereal' : ''}${combinedMaterial ? ' · ' + fmt(combinedMaterial) + ' Attunement Mat.' : ''}</span>`;
+
+    return `
+      <div class="team-cost-row">
+        <span class="tcr-name">${card.name}</span>
+        <span class="tcr-status">${statusLabel}</span>
+        ${costLine}
+      </div>
+    `;
+  }).join('');
 
   const essenceItems = Object.entries(totals.essenceByElement).map(([el, amt]) =>
     `<div class="cost-item"><div class="clabel">${el} Essence</div><div class="cval">${fmt(amt)}</div></div>`
@@ -2829,7 +3030,7 @@ function renderTeamCost() {
   ` : '';
 
   box.innerHTML = `
-    <p class="slots-label" style="margin-top:22px;">Remaining cost to fully build (to Overdrive)</p>
+    <p class="slots-label" style="margin-top:22px;">Remaining cost to fully build & attune</p>
     <div class="team-cost-list">${perCardHtml}</div>
     <p class="clabel" style="margin-top:16px;">Team total</p>
     <div class="cost-grid" style="margin-top:8px;">
@@ -2837,8 +3038,10 @@ function renderTeamCost() {
       ${essenceItems}
       <div class="cost-item"><div class="clabel">Cores</div><div class="cval">${fmt(totals.cores)}</div></div>
       <div class="cost-item"><div class="clabel">Ethereal Cores</div><div class="cval">${fmt(totals.ethereal)}</div></div>
+      ${totals.attunementMaterial ? `<div class="cost-item"><div class="clabel">Attunement Material</div><div class="cval">${fmt(totals.attunementMaterial)}</div></div>` : ''}
     </div>
     ${sacrificeHtml}
+    <p class="calc-note" style="margin-top:10px;">Attunement cost assumes going to full pity (10 attempts) to guarantee a Divine result, and is only added for cards that don't yet have one recorded above.</p>
   `;
 }
 
