@@ -51,6 +51,7 @@
     display: grid;
     grid-template-columns: 280px 1fr;
     min-height: 100vh;
+    align-content: start;
   }
 
   .shell.no-rail {
@@ -65,8 +66,15 @@
   }
 
   /* ---------- Header ---------- */
-  header.top {
+  .sticky-top {
     grid-column: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg);
+  }
+
+  header.top {
     display: flex;
     align-items: baseline;
     gap: 14px;
@@ -223,9 +231,9 @@
     border-right: 1px solid var(--line);
     padding: 22px 20px 40px;
     position: sticky;
-    top: 0;
+    top: var(--sticky-h, 110px);
     align-self: start;
-    max-height: 100vh;
+    max-height: calc(100vh - var(--sticky-h, 110px));
     overflow-y: auto;
   }
 
@@ -404,7 +412,6 @@
   }
 
   .tabs {
-    grid-column: 1 / -1;
     display: flex;
     gap: 4px;
     padding: 14px 28px 0;
@@ -945,17 +952,33 @@
 
   .team-thumb-row {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex: 1;
     flex-wrap: wrap;
   }
 
-  .team-thumb-row img {
-    width: 40px;
-    height: 53px;
+  .team-thumb-item {
+    text-align: center;
+  }
+
+  .team-thumb-item img {
+    width: 64px;
+    height: 85px;
     object-fit: cover;
-    border-radius: 5px;
+    border-radius: 6px;
     border: 1px solid var(--line-strong);
+    display: block;
+  }
+
+  .team-thumb-milestone {
+    display: block;
+    font-size: 9.5px;
+    color: var(--gold);
+    margin-top: 3px;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .team-card-actions { display: flex; gap: 8px; }
@@ -972,13 +995,22 @@
   .team-edit-btn:hover { border-color: var(--gold); color: var(--gold); }
   .team-delete-btn:hover { border-color: #e8623d; color: #e8623d; }
 
-  .team-builder-shell {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 22px;
+  .team-cost-summary {
+    flex-basis: 100%;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
   }
 
-  @media (max-width: 800px) {
+  .team-builder-shell {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+    max-width: 1400px;
+  }
+
+  @media (max-width: 900px) {
     .team-builder-shell { grid-template-columns: 1fr; }
   }
 
@@ -988,6 +1020,8 @@
     border-radius: 12px;
     padding: 18px 20px;
   }
+
+  .builder-panel-wide { min-width: 0; }
 
   .builder-panel h3 {
     font-family: 'Oswald', sans-serif;
@@ -1001,7 +1035,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
     gap: 10px;
-    max-height: 480px;
+    max-height: 640px;
     overflow-y: auto;
   }
 
@@ -1019,6 +1053,7 @@
     object-fit: cover;
     border-radius: 6px;
     border: 2px solid transparent;
+    background: var(--surface-2);
   }
   .mini-card.in-team img { border-color: var(--gold); }
 
@@ -1048,8 +1083,12 @@
   .team-slots {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    gap: 14px;
     margin-bottom: 10px;
+  }
+
+  @media (max-width: 700px) {
+    .team-slots { grid-template-columns: repeat(3, 1fr); }
   }
 
   .slots-label {
@@ -1059,12 +1098,12 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .slots-label:not(:first-child) { margin-top: 14px; }
+  .slots-label:not(:first-child) { margin-top: 18px; }
 
   .slot {
     aspect-ratio: 3/4;
     border: 1px dashed var(--line-strong);
-    border-radius: 7px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1073,21 +1112,55 @@
     background: var(--surface-2);
   }
 
-  .slot img { width: 100%; height: 100%; object-fit: cover; }
+  .slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  .slot .empty-slot { color: var(--text-faint); font-size: 20px; }
+  .slot .empty-slot { color: var(--text-faint); font-size: 28px; }
+
+  .slot-name {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(10,9,13,0.9));
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 14px 6px 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .slot-milestone {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: rgba(10,9,13,0.92);
+    color: var(--gold);
+    border: none;
+    border-top: 1px solid var(--gold-dim);
+    font-size: 10.5px;
+    font-family: 'Inter', sans-serif;
+    padding: 4px 3px;
+    outline: none;
+    cursor: pointer;
+  }
 
   .slot-remove {
     position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 18px;
-    height: 18px;
+    top: 5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: rgba(18,16,22,0.85);
     color: var(--text);
     border: none;
-    font-size: 11px;
+    font-size: 12px;
+    z-index: 2;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1119,6 +1192,46 @@
     padding: 10px 16px;
     border-radius: 7px;
     cursor: pointer;
+  }
+
+  .team-cost-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .team-cost-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface-2);
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
+
+  .tcr-name {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    min-width: 110px;
+  }
+
+  .tcr-status {
+    font-size: 10.5px;
+    color: var(--gold);
+    background: var(--gold-dim);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  .tcr-cost {
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  .tcr-done {
+    color: #5fa855;
   }
 
   /* ---------- Guides ---------- */
@@ -1324,20 +1437,22 @@
 <body>
 
 <div class="shell" id="shellRoot">
-  <header class="top">
-    <h1>Cardpedia</h1>
-    <span class="count" id="resultCount"></span>
-    <span class="spacer"></span>
-    <div class="auth-area" id="authArea"></div>
-  </header>
+  <div class="sticky-top">
+    <header class="top">
+      <h1>Cardpedia</h1>
+      <span class="count" id="resultCount"></span>
+      <span class="spacer"></span>
+      <div class="auth-area" id="authArea"></div>
+    </header>
 
-  <div class="tabs" id="tabsBar">
-    <div class="tab active" data-tab="all">All Cards</div>
-    <div class="tab" data-tab="skins">Skins</div>
-    <div class="tab" data-tab="wishlist">My Wishlist</div>
-    <div class="tab" data-tab="calculator">Cost Calculator</div>
-    <div class="tab" data-tab="teams">Teams</div>
-    <div class="tab" data-tab="guides">Guides</div>
+    <div class="tabs" id="tabsBar">
+      <div class="tab active" data-tab="all">All Cards</div>
+      <div class="tab" data-tab="skins">Skins</div>
+      <div class="tab" data-tab="wishlist">My Wishlist</div>
+      <div class="tab" data-tab="calculator">Cost Calculator</div>
+      <div class="tab" data-tab="teams">Teams</div>
+      <div class="tab" data-tab="guides">Guides</div>
+    </div>
   </div>
 
   <aside class="rail" id="railAside">
@@ -1422,15 +1537,15 @@ let regradeConfig = null;
 let attunementConfig = null;
 
 const MILESTONES = [
-  { idx: 0, label: 'Exotic (unevolved)' },
-  { idx: 1, label: 'Legendary' },
-  { idx: 2, label: 'Mythical (Lv.100, base)' },
-  { idx: 3, label: 'Mythical — Awaken 1' },
-  { idx: 4, label: 'Mythical — Awaken 2' },
-  { idx: 5, label: 'Mythical — Awaken 3' },
-  { idx: 6, label: 'Mythical — Awaken 4' },
-  { idx: 7, label: 'Mythical — Awaken 5' },
-  { idx: 8, label: 'Mythical — Awaken 5 + Overdrive' }
+  { idx: 0, label: 'Exotic (unevolved)', shortLabel: 'Exotic' },
+  { idx: 1, label: 'Legendary', shortLabel: 'Legendary' },
+  { idx: 2, label: 'Mythical (Lv.100, base)', shortLabel: 'Mythical' },
+  { idx: 3, label: 'Mythical — Awaken 1', shortLabel: 'Awaken 1' },
+  { idx: 4, label: 'Mythical — Awaken 2', shortLabel: 'Awaken 2' },
+  { idx: 5, label: 'Mythical — Awaken 3', shortLabel: 'Awaken 3' },
+  { idx: 6, label: 'Mythical — Awaken 4', shortLabel: 'Awaken 4' },
+  { idx: 7, label: 'Mythical — Awaken 5', shortLabel: 'Awaken 5' },
+  { idx: 8, label: 'Mythical — Awaken 5 + Overdrive', shortLabel: 'Overdriven' }
 ];
 
 let calcState = {
@@ -1468,7 +1583,7 @@ function getAcquisitionEstimate(rarity, isIconic, grade) {
 const MAX_TEAM_SIZE = 10;
 const STARTING_FIVE = 5;
 let userTeams = [];
-let teamBuilder = null; // { id: existing-id-or-null, name, cardIds: [] }
+let teamBuilder = null; // { id: existing-id-or-null, name, slots: [{cardId, milestone}] }
 let teamSearch = '';
 
 let state = {
@@ -2479,7 +2594,7 @@ function renderTeamsTab() {
   `;
 
   document.getElementById('newTeamBtn').onclick = () => {
-    teamBuilder = { id: null, name: 'New Team', cardIds: [] };
+    teamBuilder = { id: null, name: 'New Team', slots: [] };
     render();
   };
 
@@ -2490,21 +2605,34 @@ function renderTeamsTab() {
   }
 
   userTeams.forEach(team => {
-    const cards = team.card_ids.map(id => allCards.find(c => c.id === id)).filter(Boolean);
+    const slots = (team.slots || []).map(s => ({ ...s, card: allCards.find(c => c.id === s.cardId) })).filter(s => s.card);
+    const { totals } = computeTeamCost(slots.map(s => ({ cardId: s.card.id, milestone: s.milestone })));
+    const essenceSummary = Object.entries(totals.essenceByElement).map(([el, amt]) => `${fmt(amt)} ${el}`).join(', ');
     const row = document.createElement('div');
     row.className = 'team-card';
     row.innerHTML = `
       <span class="tname">${team.name}</span>
       <div class="team-thumb-row">
-        ${cards.map(c => `<img src="${c.image_url}" alt="${c.name}" title="${c.name}">`).join('')}
+        ${slots.map(s => `
+          <div class="team-thumb-item">
+            <img src="${s.card.image_url}" alt="${s.card.name}" title="${s.card.name}" loading="lazy">
+            <span class="team-thumb-milestone">${MILESTONES[s.milestone]?.shortLabel || MILESTONES[s.milestone]?.label || ''}</span>
+          </div>
+        `).join('')}
       </div>
       <div class="team-card-actions">
         <button class="team-edit-btn" data-id="${team.id}">Edit</button>
         <button class="team-delete-btn" data-id="${team.id}">Delete</button>
       </div>
+      <div class="team-cost-summary">
+        ${(totals.gold || totals.cores)
+          ? `Remaining: ${fmt(totals.gold)} Gold · ${essenceSummary} · ${fmt(totals.cores)} Cores${totals.ethereal ? ' · ' + fmt(totals.ethereal) + ' Ethereal' : ''}`
+          : 'All cards fully built ✓'
+        }
+      </div>
     `;
     row.querySelector('.team-edit-btn').onclick = () => {
-      teamBuilder = { id: team.id, name: team.name, cardIds: [...team.card_ids] };
+      teamBuilder = { id: team.id, name: team.name, slots: (team.slots || []).map(s => ({ ...s })) };
       render();
     };
     row.querySelector('.team-delete-btn').onclick = () => deleteTeam(team.id);
@@ -2525,7 +2653,7 @@ function renderTeamBuilder() {
         <div class="mini-grid" id="miniGrid"></div>
       </div>
 
-      <div class="builder-panel">
+      <div class="builder-panel builder-panel-wide">
         <input type="text" class="team-name-input" id="teamNameInput" value="${teamBuilder.name}">
         <p class="slots-label">Starting 5</p>
         <div class="team-slots" id="teamSlotsMain"></div>
@@ -2535,6 +2663,7 @@ function renderTeamBuilder() {
           <button class="builder-save" id="saveTeamBtn">Save Team</button>
           <button class="builder-cancel" id="cancelTeamBtn">Cancel</button>
         </div>
+        <div id="teamCostSection"></div>
       </div>
     </div>
   `;
@@ -2557,6 +2686,7 @@ function renderTeamBuilder() {
 
   renderMiniGrid();
   renderSlots();
+  renderTeamCost();
 }
 
 function renderMiniGrid() {
@@ -2568,25 +2698,34 @@ function renderMiniGrid() {
     ? allCards.filter(c => c.name.toLowerCase().includes(teamSearch.trim().toLowerCase()))
     : allCards;
 
+  const slotCardIds = teamBuilder.slots.map(s => s.cardId);
+
   filteredCards.slice(0, 200).forEach(card => {
-    const inTeam = teamBuilder.cardIds.includes(card.id);
-    const atMax = teamBuilder.cardIds.length >= MAX_TEAM_SIZE;
+    const inTeam = slotCardIds.includes(card.id);
+    const atMax = teamBuilder.slots.length >= MAX_TEAM_SIZE;
     const el = document.createElement('div');
     el.className = 'mini-card' + (inTeam ? ' in-team' : '') + (!inTeam && atMax ? ' disabled' : '');
-    el.innerHTML = `<img src="${card.image_url}" alt="${card.name}"><div class="mname">${card.name}</div>`;
+    el.innerHTML = `<img src="${card.image_url}" alt="${card.name}" loading="lazy"><div class="mname">${card.name}</div>`;
     el.onclick = () => {
       if (inTeam) {
-        teamBuilder.cardIds = teamBuilder.cardIds.filter(id => id !== card.id);
+        teamBuilder.slots = teamBuilder.slots.filter(s => s.cardId !== card.id);
       } else if (!atMax) {
-        teamBuilder.cardIds.push(card.id);
+        teamBuilder.slots.push({ cardId: card.id, milestone: 0 });
       } else {
         return;
       }
       renderMiniGrid();
       renderSlots();
+      renderTeamCost();
     };
     miniGrid.appendChild(el);
   });
+}
+
+function milestoneOptionsHtml(selected) {
+  return MILESTONES.map(m =>
+    `<option value="${m.idx}" ${m.idx === selected ? 'selected' : ''}>${m.shortLabel}</option>`
+  ).join('');
 }
 
 function renderSlots() {
@@ -2595,16 +2734,26 @@ function renderSlots() {
     if (!el) return;
     el.innerHTML = '';
     for (let i = startIdx; i < endIdx; i++) {
-      const cardId = teamBuilder.cardIds[i];
-      const card = cardId ? allCards.find(c => c.id === cardId) : null;
+      const slotData = teamBuilder.slots[i];
+      const card = slotData ? allCards.find(c => c.id === slotData.cardId) : null;
       const slot = document.createElement('div');
       slot.className = 'slot';
       if (card) {
-        slot.innerHTML = `<img src="${card.image_url}" alt="${card.name}"><button class="slot-remove" data-id="${card.id}">✕</button>`;
+        slot.innerHTML = `
+          <img src="${card.image_url}" alt="${card.name}" loading="lazy">
+          <button class="slot-remove" data-id="${card.id}">✕</button>
+          <div class="slot-name">${card.name}</div>
+          <select class="slot-milestone">${milestoneOptionsHtml(slotData.milestone)}</select>
+        `;
         slot.querySelector('.slot-remove').onclick = () => {
-          teamBuilder.cardIds = teamBuilder.cardIds.filter(id => id !== card.id);
+          teamBuilder.slots = teamBuilder.slots.filter(s => s.cardId !== card.id);
           renderMiniGrid();
           renderSlots();
+          renderTeamCost();
+        };
+        slot.querySelector('.slot-milestone').onchange = (e) => {
+          slotData.milestone = parseInt(e.target.value, 10);
+          renderTeamCost();
         };
       } else {
         slot.innerHTML = '<span class="empty-slot">+</span>';
@@ -2617,11 +2766,87 @@ function renderSlots() {
   fillSlots('teamSlotsBench', STARTING_FIVE, MAX_TEAM_SIZE);
 }
 
+const FULLY_BUILT_MILESTONE = MILESTONES.length - 1; // Overdrive
+
+// Sums the cost to take every filled team slot from its current milestone up to
+// fully Overdriven, grouping essence by element (since a team can mix elements)
+// and sacrifice-card counts by rarity.
+function computeTeamCost(slots) {
+  const perCard = [];
+  const totals = { gold: 0, cores: 0, ethereal: 0, essenceByElement: {}, sacrifices: {} };
+
+  slots.forEach(s => {
+    const card = allCards.find(c => c.id === s.cardId);
+    if (!card) return;
+    const cost = computeStageCost(s.milestone, FULLY_BUILT_MILESTONE);
+    perCard.push({ card, milestone: s.milestone, cost });
+    if (!cost) return;
+
+    totals.gold += cost.gold;
+    totals.cores += cost.cores;
+    totals.ethereal += cost.ethereal;
+    totals.essenceByElement[card.element] = (totals.essenceByElement[card.element] || 0) + cost.essence;
+    Object.entries(cost.sacrifices).forEach(([rarity, count]) => {
+      totals.sacrifices[rarity] = (totals.sacrifices[rarity] || 0) + count;
+    });
+  });
+
+  return { perCard, totals };
+}
+
+function renderTeamCost() {
+  const box = document.getElementById('teamCostSection');
+  if (!box) return;
+
+  const filled = teamBuilder.slots.filter(s => allCards.find(c => c.id === s.cardId));
+  if (filled.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+
+  const { perCard, totals } = computeTeamCost(filled);
+
+  const perCardHtml = perCard.map(({ card, milestone, cost }) => `
+    <div class="team-cost-row">
+      <span class="tcr-name">${card.name}</span>
+      <span class="tcr-status">${MILESTONES[milestone].shortLabel}</span>
+      ${cost
+        ? `<span class="tcr-cost">${fmt(cost.gold)} Gold · ${fmt(cost.essence)} ${card.element} Essence · ${fmt(cost.cores)} Cores${cost.ethereal ? ' · ' + fmt(cost.ethereal) + ' Ethereal' : ''}</span>`
+        : `<span class="tcr-cost tcr-done">Fully built ✓</span>`
+      }
+    </div>
+  `).join('');
+
+  const essenceItems = Object.entries(totals.essenceByElement).map(([el, amt]) =>
+    `<div class="cost-item"><div class="clabel">${el} Essence</div><div class="cval">${fmt(amt)}</div></div>`
+  ).join('');
+
+  const sacrificeHtml = Object.keys(totals.sacrifices).length ? `
+    <p class="clabel" style="margin-top:14px;">Sacrifice cards needed (team total)</p>
+    <div class="sacrifice-row">
+      ${Object.entries(totals.sacrifices).map(([rarity, count]) => `<span class="sacrifice-pill">${count} × ${rarity}</span>`).join('')}
+    </div>
+  ` : '';
+
+  box.innerHTML = `
+    <p class="slots-label" style="margin-top:22px;">Remaining cost to fully build (to Overdrive)</p>
+    <div class="team-cost-list">${perCardHtml}</div>
+    <p class="clabel" style="margin-top:16px;">Team total</p>
+    <div class="cost-grid" style="margin-top:8px;">
+      <div class="cost-item"><div class="clabel">Gold</div><div class="cval">${fmt(totals.gold)}</div></div>
+      ${essenceItems}
+      <div class="cost-item"><div class="clabel">Cores</div><div class="cval">${fmt(totals.cores)}</div></div>
+      <div class="cost-item"><div class="clabel">Ethereal Cores</div><div class="cval">${fmt(totals.ethereal)}</div></div>
+    </div>
+    ${sacrificeHtml}
+  `;
+}
+
 async function saveTeam() {
   const payload = {
     user_id: currentSession.user.id,
     name: teamBuilder.name.trim() || 'Unnamed Team',
-    card_ids: teamBuilder.cardIds,
+    slots: teamBuilder.slots,
     updated_at: new Date().toISOString()
   };
 
@@ -3163,7 +3388,14 @@ function renderWishlistTab() {
   });
 }
 
-loadData();
+function updateStickyHeaderHeight() {
+  const stickyTop = document.querySelector('.sticky-top');
+  if (!stickyTop) return;
+  document.documentElement.style.setProperty('--sticky-h', stickyTop.offsetHeight + 'px');
+}
+window.addEventListener('resize', updateStickyHeaderHeight);
+
+loadData().then(() => updateStickyHeaderHeight());
 </script>
 
 </body>
