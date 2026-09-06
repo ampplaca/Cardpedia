@@ -1540,6 +1540,23 @@
   .wish-btn:hover { border-color: var(--gold); color: var(--gold); }
   .wish-btn.danger:hover { border-color: #e8623d; color: #e8623d; }
 
+  .lookup-results-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lookup-target-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .lookup-target-header .tname {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+  }
+
   /* ---------- Lightbox ---------- */
   .lightbox-backdrop {
     position: fixed;
@@ -1805,6 +1822,12 @@ let userTeams = [];
 let teamBuilder = null; // { id: existing-id-or-null, name, slots: [{cardId, milestone}] }
 let teamSearch = '';
 let teamPickerWishlistOnly = false;
+
+// "Look up another user" state, on the My Wishlist tab
+let lookupSearchTerm = '';
+let lookupResults = [];
+let lookupTargetProfile = null;
+let lookupTargetSkinWishlist = [];
 
 let state = {
   search: '',
@@ -3916,10 +3939,131 @@ function renderSkinGrid() {
 function renderWishlistTab() {
   const content = document.getElementById('content');
 
+  content.innerHTML = `
+    <div class="user-lookup-section">
+      <p class="slots-label">Look up another user's skins</p>
+      <div class="search-box" style="max-width:340px;margin-bottom:10px;">
+        <input type="text" id="userLookupInput" placeholder="Enter a username…" value="${lookupSearchTerm}">
+      </div>
+      <div id="userLookupResults"></div>
+    </div>
+    <div id="myWishlistSection" style="margin-top:30px;"></div>
+  `;
+
+  document.getElementById('userLookupInput').addEventListener('input', async (e) => {
+    lookupSearchTerm = e.target.value;
+    lookupTargetProfile = null;
+    await refreshLookupResults();
+  });
+
+  refreshLookupResults();
+  renderMyWishlistSection();
+}
+
+async function refreshLookupResults() {
+  const box = document.getElementById('userLookupResults');
+  if (!box) return;
+
+  if (lookupTargetProfile) {
+    renderLookupTarget();
+    return;
+  }
+
+  const term = lookupSearchTerm.trim();
+  if (!term) {
+    lookupResults = [];
+    box.innerHTML = '';
+    return;
+  }
+
+  const { data, error } = await sb.from('profiles').select('*').ilike('username', `%${term}%`).limit(8);
+  lookupResults = error ? [] : (data || []);
+
+  if (lookupResults.length === 0) {
+    box.innerHTML = '<p class="calc-note">No matching usernames.</p>';
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="lookup-results-list">
+      ${lookupResults.map(p => `<button class="chip lookup-result" data-id="${p.id}" data-username="${p.username}">${p.username}</button>`).join('')}
+    </div>
+  `;
+  box.querySelectorAll('.lookup-result').forEach(btn => {
+    btn.onclick = async () => {
+      lookupTargetProfile = { id: btn.dataset.id, username: btn.dataset.username };
+      await loadLookupTargetWishlist();
+      renderLookupTarget();
+    };
+  });
+}
+
+async function loadLookupTargetWishlist() {
+  if (!lookupTargetProfile) { lookupTargetSkinWishlist = []; return; }
+  const { data, error } = await sb.from('user_skin_wishlist').select('*').eq('user_id', lookupTargetProfile.id);
+  lookupTargetSkinWishlist = error ? [] : (data || []);
+}
+
+function renderLookupTarget() {
+  const box = document.getElementById('userLookupResults');
+  if (!box || !lookupTargetProfile) return;
+
+  const entries = lookupTargetSkinWishlist
+    .map(row => {
+      const skin = allSkins.find(s => s.skin_id === row.skin_id);
+      if (!skin) return null;
+      const card = skin.card_id ? allCards.find(c => c.id === skin.card_id) : null;
+      return { row, skin, card };
+    })
+    .filter(Boolean);
+
+  const wanted = entries.filter(e => e.row.wanted && !e.row.obtained);
+  const obtained = entries.filter(e => e.row.obtained);
+
+  const renderGroup = (title, list) => {
+    if (list.length === 0) return '';
+    return `
+      <p class="wish-section-title">${title} (${list.length})</p>
+      <div class="wish-grid">
+        ${list.map(({ skin, card }) => `
+          <div class="wish-item ${rarityClass(skin.rarity)}">
+            <img src="${skin.image_url}" alt="${skin.skin_name}">
+            <div class="wcard">${card ? card.name : skin.character_name}</div>
+            <div class="wname">${skin.skin_name}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  };
+
+  box.innerHTML = `
+    <div class="lookup-target-header">
+      <span class="tname">Viewing: ${lookupTargetProfile.username}</span>
+      <button class="clear-btn" id="lookupClearBtn">Change user</button>
+    </div>
+    ${entries.length === 0
+      ? '<p class="calc-note">This user has no wishlisted skins.</p>'
+      : renderGroup('Wanted', wanted) + renderGroup('Obtained', obtained)
+    }
+  `;
+
+  document.getElementById('lookupClearBtn').onclick = async () => {
+    lookupTargetProfile = null;
+    lookupTargetSkinWishlist = [];
+    document.getElementById('userLookupInput').value = '';
+    lookupSearchTerm = '';
+    await refreshLookupResults();
+  };
+}
+
+function renderMyWishlistSection() {
+  const content = document.getElementById('myWishlistSection');
+  if (!content) return;
+
   if (!currentSession) {
     content.innerHTML = `
       <div class="empty-state">
-        <h2>Sign in to see your wishlist</h2>
+        <h2>Sign in to see your own wishlist</h2>
         <p>Heart cards or skins and they'll show up here.</p>
       </div>
     `;
