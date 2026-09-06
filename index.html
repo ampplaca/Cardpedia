@@ -59,6 +59,8 @@
     grid-template-columns: 280px 1fr;
     min-height: 100vh;
     align-content: start;
+    width: 100%;
+    max-width: 100vw;
   }
 
   .shell.no-rail {
@@ -79,6 +81,9 @@
     top: 0;
     z-index: 30;
     background: var(--bg);
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
   }
 
   header.top {
@@ -87,6 +92,9 @@
     gap: 14px;
     padding: 22px 28px 18px;
     border-bottom: 1px solid var(--line);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   header.top h1 {
@@ -426,6 +434,9 @@
     border-bottom: 1px solid var(--line);
     overflow-x: auto;
     scrollbar-width: none;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .tabs::-webkit-scrollbar { display: none; }
 
