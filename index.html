@@ -2034,6 +2034,28 @@ async function cycleCardWishlist(cardId) {
   return true;
 }
 
+// Double-click shortcut: skip straight to "obtained" in one shot, instead of
+// cycling through "wanted" first.
+async function markSkinOwnedDirectly(skinId) {
+  if (!currentSession) { openAuthModal(); return false; }
+  const { data, error } = await sb.from('user_skin_wishlist')
+    .upsert({ user_id: currentSession.user.id, skin_id: skinId, wanted: true, obtained: true, updated_at: new Date().toISOString() }, { onConflict: 'user_id,skin_id' })
+    .select().single();
+  if (error) { console.error(error); return false; }
+  wishlistBySkinId[skinId] = data;
+  return true;
+}
+
+async function markCardOwnedDirectly(cardId) {
+  if (!currentSession) { openAuthModal(); return false; }
+  const { data, error } = await sb.from('user_card_wishlist')
+    .upsert({ user_id: currentSession.user.id, card_id: cardId, wanted: true, obtained: true, updated_at: new Date().toISOString() }, { onConflict: 'user_id,card_id' })
+    .select().single();
+  if (error) { console.error(error); return false; }
+  cardWishlistByCardId[cardId] = data;
+  return true;
+}
+
 sb.auth.onAuthStateChange((_event, session) => {
   currentSession = session;
   renderAuthArea();
@@ -2277,7 +2299,7 @@ function render() {
     tile.innerHTML = `
       <div class="art-wrap">
         <img src="${card.image_url}" alt="${card.name}" loading="lazy">
-        <button class="wishlist-heart card-heart ${cwClass}" title="${currentSession ? 'Click: want it. Click again: got it.' : 'Sign in to track'}">${cwSymbol}</button>
+        <button class="wishlist-heart card-heart ${cwClass}" title="${currentSession ? 'Click: want it. Click again: got it. Double-click: mark owned instantly.' : 'Sign in to track'}">${cwSymbol}</button>
         ${card.is_iconic ? '<span class="iconic-badge">ICONIC</span>' : ''}
         <span class="element-badge" style="background:${elColor}">${card.element || ''}</span>
       </div>
@@ -2292,6 +2314,12 @@ function render() {
     tile.querySelector('.card-heart').onclick = async (e) => {
       e.stopPropagation();
       const changed = await cycleCardWishlist(card.id);
+      if (changed) render();
+    };
+    tile.querySelector('.card-heart').ondblclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const changed = await markCardOwnedDirectly(card.id);
       if (changed) render();
     };
     grid.appendChild(tile);
@@ -2331,7 +2359,7 @@ function openModal(card) {
             <button class="wishlist-heart modal-art-heart ${(() => {
               const cw = cardWishlistByCardId[card.id];
               return cw && cw.obtained ? 'obtained' : (cw && cw.wanted ? 'wanted' : '');
-            })()}" id="modalCardHeart" title="${currentSession ? 'Click: want it. Click again: got it.' : 'Sign in to track'}">${(() => {
+            })()}" id="modalCardHeart" title="${currentSession ? 'Click: want it. Click again: got it. Double-click: mark owned instantly.' : 'Sign in to track'}">${(() => {
               const cw = cardWishlistByCardId[card.id];
               return cw && cw.obtained ? '✓' : '♥';
             })()}</button>
@@ -2351,7 +2379,7 @@ function openModal(card) {
                   const heartSymbol = w && w.obtained ? '✓' : '♥';
                   return `
                   <div class="skin-thumb ${rarityClass(s.rarity)}">
-                    <button class="wishlist-heart ${heartClass}" data-skin-id="${s.skin_id}" title="${currentSession ? 'Click: want it. Click again: got it.' : 'Sign in to track'}">${heartSymbol}</button>
+                    <button class="wishlist-heart ${heartClass}" data-skin-id="${s.skin_id}" title="${currentSession ? 'Click: want it. Click again: got it. Double-click: mark owned instantly.' : 'Sign in to track'}">${heartSymbol}</button>
                     <img class="skin-lightbox-img" data-url="${s.image_url}" data-name="${s.skin_name}" src="${s.image_url}" alt="${s.skin_name}" loading="lazy">
                     <p class="sname">${s.skin_name.replace(card.name + ' ', '').replace(/^\(|\)$/g, '')}</p>
                     <span class="rarity-pill ${rarityClass(s.rarity)}">${s.rarity}</span>
@@ -2376,6 +2404,12 @@ function openModal(card) {
     const changed = await cycleCardWishlist(card.id);
     if (changed) openModal(card);
   };
+  document.getElementById('modalCardHeart').ondblclick = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const changed = await markCardOwnedDirectly(card.id);
+    if (changed) openModal(card);
+  };
 
   document.querySelectorAll('.skin-lightbox-img').forEach(img => {
     img.onclick = (e) => {
@@ -2389,6 +2423,13 @@ function openModal(card) {
       e.stopPropagation();
       const skinId = btn.dataset.skinId;
       const changed = await cycleWishlist(skinId);
+      if (changed) openModal(card);
+    };
+    btn.ondblclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const skinId = btn.dataset.skinId;
+      const changed = await markSkinOwnedDirectly(skinId);
       if (changed) openModal(card);
     };
   });
@@ -3792,7 +3833,7 @@ function renderSkinGrid() {
     const item = document.createElement('div');
     item.className = 'wish-item ' + rarityClass(skin.rarity);
     item.innerHTML = `
-      <button class="wishlist-heart ${heartClass}" title="${currentSession ? 'Click: want it. Click again: got it.' : 'Sign in to track'}">${heartSymbol}</button>
+      <button class="wishlist-heart ${heartClass}" title="${currentSession ? 'Click: want it. Click again: got it. Double-click: mark owned instantly.' : 'Sign in to track'}">${heartSymbol}</button>
       <img src="${skin.image_url}" alt="${skin.skin_name}" loading="lazy" style="cursor:zoom-in;">
       ${card
         ? `<button class="wcard-link">${card.name}</button>`
@@ -3806,6 +3847,12 @@ function renderSkinGrid() {
     item.querySelector('.wishlist-heart').onclick = async (e) => {
       e.stopPropagation();
       await cycleWishlist(skin.skin_id);
+      renderSkinGrid();
+    };
+    item.querySelector('.wishlist-heart').ondblclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      await markSkinOwnedDirectly(skin.skin_id);
       renderSkinGrid();
     };
     const cardLink = item.querySelector('.wcard-link');
