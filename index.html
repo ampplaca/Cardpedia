@@ -40,6 +40,7 @@
     color: var(--text);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   ::selection { background: var(--gold-dim); color: var(--text); }
@@ -235,6 +236,7 @@
     align-self: start;
     max-height: calc(100vh - var(--sticky-h, 110px));
     overflow-y: auto;
+    min-width: 0;
   }
 
   @media (max-width: 860px) {
@@ -416,7 +418,10 @@
     gap: 4px;
     padding: 14px 28px 0;
     border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
 
   .tab {
     font-family: 'Oswald', sans-serif;
@@ -426,11 +431,32 @@
     cursor: pointer;
     border-bottom: 2px solid transparent;
     letter-spacing: 0.01em;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tab.active {
     color: var(--text);
     border-bottom-color: var(--gold);
+  }
+
+  /* ---------- Mobile cleanup ---------- */
+  @media (max-width: 640px) {
+    header.top {
+      flex-wrap: wrap;
+      padding: 16px 16px 14px;
+      gap: 8px;
+    }
+    header.top h1 { font-size: 21px; }
+    header.top .count { display: none; }
+    .spacer, header.top .spacer { flex-basis: 100%; flex: 0 0 100%; height: 0; }
+    .auth-area { width: 100%; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+    .auth-user { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .tabs { padding: 10px 16px 0; }
+    .tab { font-size: 13.5px; padding: 8px 12px; }
+    main { padding: 16px 16px 40px; }
+    .wishlist-heart, .slot-remove { width: 30px; height: 30px; font-size: 14px; }
+    .card-heart { width: 30px; height: 30px; }
   }
 
   .grid {
@@ -756,6 +782,14 @@
 
   @media (max-width: 760px) {
     .calc-shell { grid-template-columns: 1fr; }
+  }
+
+  .skins-filter-panels {
+    grid-template-columns: 240px 1fr;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 760px) {
+    .skins-filter-panels { grid-template-columns: 1fr; }
   }
 
   .calc-panel {
@@ -3703,7 +3737,7 @@ function renderSkinsTab() {
       </label>
     </div>
 
-    <div class="calc-shell" style="grid-template-columns: 240px 1fr; margin-bottom:20px;">
+    <div class="calc-shell skins-filter-panels">
       <div class="calc-panel">
         <h3 style="margin-bottom:10px;">Series</h3>
         <input type="text" class="mini-search" id="skinSeriesSearchBox" placeholder="Find a series…">
