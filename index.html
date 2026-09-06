@@ -1409,6 +1409,12 @@
   .guide-body p { margin: 0 0 10px; }
   .guide-body ul { margin: 0 0 10px; padding-left: 20px; }
   .guide-body li { margin-bottom: 5px; }
+  .guide-body li ul { margin-top: 6px; margin-bottom: 6px; }
+  .guide-body li ul li {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-bottom: 3px;
+  }
   .guide-body strong { color: var(--text); }
   .guide-body .g-note {
     font-size: 12.5px;
@@ -1726,11 +1732,11 @@ const DIVINE_ATTUNEMENTS = ['Vampiric Edge', 'Executioner', 'Unbreakable', 'Soul
 // list per talent that's been shared so far. If Frontline/Support/etc. turn out
 // to have more named abilities than this later, this list is easy to extend.
 const TALENT_ABILITIES = {
-  'Frontline': ['Opening Guard', 'Provoke'],
+  'Frontline': ['Opening Guard', 'Last Stand', 'Provoke', 'Guardian Angel'],
   'Support': ['Mending Light', 'War Chant', 'Remembrance'],
   'Mastermind': ['Checkmate', 'Mind Games', 'Blackmail', 'Pieces in Play'],
   'Duelist': ['Riposte', 'Bloodlust', 'True Strike', 'Mortal Wound'],
-  'Phantom': ['Phantom Rebound', 'Lingering Venom']
+  'Phantom': ['Shadowstep', 'Phantom Rebound', 'From the Shadows', 'Lingering Venom']
 };
 
 function normalizeSlot(s) {
@@ -3351,6 +3357,202 @@ const GUIDES = [
       </ul>
       <p><strong>What order should I attune?</strong></p>
       <p>DPS → Remembrance → War Chant → Mind Games (or other DPS cards) → Opening Guard <span class="sub-note">Opening Guard always goes last, and isn't required to Overdrive at all.</span></p>
+    `
+  },
+  {
+    title: 'Frontline Abilities',
+    body: `
+      <p>All abilities available to Frontline-role cards, with how each one scales by rarity.</p>
+      <ul>
+        <li><strong>Opening Guard</strong> — reduces incoming damage by 40/50/60/75% for the first 2–4 turns of battle.
+          <ul>
+            <li>Common – Exotic: 40% reduction, first 2 turns</li>
+            <li>Legendary: 50% reduction, first 3 turns</li>
+            <li>Mythical (base): 60% reduction, first 3 turns</li>
+            <li>Awaken 5: 75% reduction, first 4 turns</li>
+          </ul>
+        </li>
+        <li><strong>Last Stand</strong> — once per battle, when reduced to 0 HP, heal for 25/28/32/45% HP and reduce the next hit taken by 50/57/65/90%.
+          <ul>
+            <li>Common – Exotic: heal 25%, next hit reduced 50%</li>
+            <li>Legendary: heal 28%, next hit reduced 57%</li>
+            <li>Mythical (base): heal 32%, next hit reduced 65%</li>
+            <li>Awaken 5: heal 45%, next hit reduced 90%</li>
+          </ul>
+        </li>
+        <li><strong>Provoke</strong> — taunts all enemies to target you for 2 turns starting turn 3, then goes on cooldown. While active, you take 50% more damage.
+          <ul>
+            <li>Common: 7-turn cooldown</li>
+            <li>Rare: 6-turn cooldown</li>
+            <li>Legendary / Mythical (base): 5-turn cooldown</li>
+            <li>Awaken 5: 4-turn cooldown</li>
+          </ul>
+        </li>
+        <li><strong>Guardian Angel</strong> — once per battle, sacrifice yourself to take a lethal hit for a teammate; they survive with 25/40/45/50% HP.
+          <ul>
+            <li>Common – Exotic: teammate survives at 25% HP</li>
+            <li>Legendary: 40% HP</li>
+            <li>Mythical (base): 45% HP</li>
+            <li>Awaken 5: 50% HP</li>
+          </ul>
+        </li>
+      </ul>
+      <p class="g-note">More Talent ability lists (Support, Mastermind, Duelist, Phantom) to come as they're provided.</p>
+    `
+  },
+  {
+    title: 'Support Abilities',
+    body: `
+      <p>All abilities available to Support-role cards, with how each one scales by rarity.</p>
+      <ul>
+        <li><strong>Mending Light</strong> — restores a % of each party member's HP on the 3rd turn, then every 3 turns after.
+          <ul>
+            <li>Common – Exotic: 12%</li>
+            <li>Legendary: 15%</li>
+            <li>Mythical (base): 18%</li>
+            <li>Awaken 5: 23%</li>
+          </ul>
+        </li>
+        <li><strong>War Chant</strong> — increases all party members' ATK for 2 turns at the start of battle, then every 4 turns after.
+          <ul>
+            <li>Common – Exotic: +20% ATK</li>
+            <li>Legendary: +30% ATK</li>
+            <li>Mythical (base): +40% ATK</li>
+            <li>Awaken 5: +60% ATK</li>
+          </ul>
+        </li>
+        <li><strong>Remembrance</strong> — when an ally dies, heals all other allies for a % of their max HP. Unaffected by anti-heal effects.
+          <ul>
+            <li>Common: 20%</li>
+            <li>Rare: 35%</li>
+            <li>Legendary: 50%</li>
+            <li>Mythical (base): 50%</li>
+            <li>Awaken 5: 75%</li>
+          </ul>
+        </li>
+      </ul>
+    `
+  },
+  {
+    title: 'Mastermind Abilities',
+    body: `
+      <p>All abilities available to Mastermind-role cards, with how each one scales by rarity.</p>
+      <ul>
+        <li><strong>Checkmate</strong> — once per target, if their HP is below a threshold, deal bonus damage.
+          <ul>
+            <li>Common – Exotic: below 20% HP → 2.0x damage</li>
+            <li>Legendary: below 22% HP → 2.3x damage</li>
+            <li>Mythical (base): below 25% HP → 2.6x damage</li>
+            <li>Awaken 5: below 30% HP → 3.0x damage</li>
+          </ul>
+        </li>
+        <li><strong>Mind Games</strong> — chance on attack to confuse the enemy, reducing their damage for 2 turns.
+          <ul>
+            <li>Common – Exotic: 20% chance, -15% damage</li>
+            <li>Legendary: 25% chance, -20% damage</li>
+            <li>Mythical (base): 30% chance, -25% damage</li>
+            <li>Awaken 5: 40% chance, -35% damage</li>
+          </ul>
+        </li>
+        <li><strong>Blackmail</strong> — chance to silence an enemy when they attempt to use an ability, preventing it from activating.
+          <ul>
+            <li>Common – Exotic: 13% chance</li>
+            <li>Legendary: 15% chance</li>
+            <li>Mythical (base): 17% chance</li>
+            <li>Awaken 5: 20% chance</li>
+          </ul>
+        </li>
+        <li><strong>Pieces in Play</strong> — passive: while you're alive, all allies deal more damage.
+          <ul>
+            <li>Common – Exotic: +1%</li>
+            <li>Legendary: +3%</li>
+            <li>Mythical (base): +5%</li>
+            <li>Awaken 5: +8%</li>
+          </ul>
+        </li>
+      </ul>
+    `
+  },
+  {
+    title: 'Duelist Abilities',
+    body: `
+      <p>All abilities available to Duelist-role cards, with how each one scales by rarity.</p>
+      <ul>
+        <li><strong>Riposte</strong> — when attacked, chance to immediately counterattack for a % of ATK.
+          <ul>
+            <li>Common – Exotic: 25% chance, 50% ATK</li>
+            <li>Legendary: 30% chance, 57% ATK</li>
+            <li>Mythical (base): 35% chance, 65% ATK</li>
+            <li>Awaken 5: 40% chance, 75% ATK</li>
+          </ul>
+        </li>
+        <li><strong>Bloodlust</strong> — every 3rd hit, heal for a % of damage dealt to enemies.
+          <ul>
+            <li>Common – Exotic: 80%</li>
+            <li>Legendary: 90%</li>
+            <li>Mythical (base): 100%</li>
+            <li>Awaken 5: 120%</li>
+          </ul>
+        </li>
+        <li><strong>Mortal Wound</strong> — on each landed hit, applies a stack reducing the target's healing received (max 90% per target). Stacks persist after death.
+          <ul>
+            <li>Common – Exotic: -5% healing per stack, persists 1 turn after death</li>
+            <li>Legendary: -7% per stack, persists 2 turns</li>
+            <li>Mythical (base): -9% per stack, persists 3 turns</li>
+            <li>Awaken 5: -12% per stack, persists 4 turns</li>
+          </ul>
+        </li>
+        <li><strong>True Strike</strong> — your attacks cannot be dodged; when the opponent attempts to dodge, deal bonus damage instead.
+          <ul>
+            <li>Common: 1.5x damage</li>
+            <li>Rare: 2.0x damage</li>
+            <li>Exotic: 2.5x damage</li>
+            <li>Legendary and up: 3.5x damage</li>
+          </ul>
+          <p class="sub-note">Unlike the other Duelist abilities, True Strike appears to cap at Legendary rather than keep climbing — confirmed via a live Mythical Awaken 1 card still showing 3.5x, matching the Legendary value exactly.</p>
+        </li>
+      </ul>
+    `
+  },
+  {
+    title: 'Phantom Abilities',
+    body: `
+      <p>All abilities available to Phantom-role cards, with how each one scales by rarity.</p>
+      <ul>
+        <li><strong>Shadowstep</strong> — chance to completely dodge any incoming attack.
+          <ul>
+            <li>Common – Exotic: 20%</li>
+            <li>Legendary: 25%</li>
+            <li>Mythical (base): 30%</li>
+            <li>Awaken 5: 40%</li>
+          </ul>
+        </li>
+        <li><strong>Phantom Rebound</strong> — once per battle, when HP falls below 25%, take 0 damage for a number of protected turns and gain ATK for 2 turns. If the triggering hit is lethal, it's negated and one protected turn is consumed immediately.
+          <ul>
+            <li>Common – Exotic: 2 protected turns, +25% ATK</li>
+            <li>Legendary: 2 protected turns, +28% ATK</li>
+            <li>Mythical (base): 2 protected turns, +32% ATK</li>
+            <li>Awaken 5: 3 protected turns, +37% ATK</li>
+          </ul>
+        </li>
+        <li><strong>From the Shadows</strong> — invisible at battle start (untargetable, can't attack for 3 turns); your next attack ambushes the lowest-HP enemy for bonus damage and stuns them for 1 turn. A killing ambush grants 100% dodge chance next turn.
+          <ul>
+            <li>Common – Exotic: 1.5x damage</li>
+            <li>Legendary: 1.8x damage</li>
+            <li>Mythical (base): 2.1x damage</li>
+            <li>Awaken 5: 2.5x damage</li>
+          </ul>
+          <p class="sub-note">The summary text for this ability listed different numbers (2.0x–3.0x) than the detailed per-rarity breakdown shown here — these figures follow the detailed breakdown; worth double-checking against the source.</p>
+        </li>
+        <li><strong>Lingering Venom</strong> — at battle start, throws a poisoned dart whose damage grows a % of ATK each turn you stay alive (up to 60% ATK per turn); you heal for a % of each poison tick.
+          <ul>
+            <li>Common – Exotic: +1% ATK/turn, heal 5% of tick</li>
+            <li>Legendary: +2% ATK/turn, heal 10% of tick</li>
+            <li>Mythical (base): +3% ATK/turn, heal 15% of tick</li>
+            <li>Awaken 5: +4.5% ATK/turn, heal 25% of tick</li>
+          </ul>
+        </li>
+      </ul>
     `
   },
   {
