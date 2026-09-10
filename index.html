@@ -1067,6 +1067,7 @@
   }
   .team-thumb-tag.ethereal { background: rgba(111,198,217,0.16); color: var(--el-ice); }
   .team-thumb-tag.divine { background: rgba(217,95,196,0.16); color: #d95fc4; }
+  .team-thumb-tag.ability { background: rgba(95,168,85,0.16); color: #5fa855; }
 
   .slot-details-list {
     display: flex;
@@ -1604,6 +1605,42 @@
   }
   .lightbox-close:hover { border-color: var(--gold); color: var(--gold); }
 
+  .compare-shell {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    max-width: 92vw;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .compare-side {
+    text-align: center;
+    max-width: 44vw;
+  }
+
+  .compare-side img {
+    max-width: 100%;
+    max-height: 75vh;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    display: block;
+  }
+
+  .compare-tag {
+    font-size: 11px;
+    color: var(--gold);
+    background: var(--gold-dim);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 6px;
+  }
+
+  @media (max-width: 700px) {
+    .compare-shell { flex-direction: column; align-items: center; }
+    .compare-side { max-width: 92vw; }
+  }
+
   /* ---------- Skins browser ---------- */
   .skins-toolbar {
     display: flex;
@@ -1653,6 +1690,7 @@
       <div class="tab active" data-tab="all">All Cards</div>
       <div class="tab" data-tab="skins">Skins</div>
       <div class="tab" data-tab="wishlist">My Wishlist</div>
+      <div class="tab" data-tab="compare">Compare</div>
       <div class="tab" data-tab="calculator">Cost Calculator</div>
       <div class="tab" data-tab="teams">Teams</div>
       <div class="tab" data-tab="guides">Guides</div>
@@ -2136,11 +2174,11 @@ sb.auth.onAuthStateChange((_event, session) => {
   loadProfile().then(() => renderAuthArea());
   loadWishlist().then(() => {
     if (currentModalCard) openModal(currentModalCard);
-    if (state.tab === 'wishlist') render();
+    if (state.tab === 'wishlist' || state.tab === 'compare') render();
   });
   loadCardWishlist().then(() => {
     if (currentModalCard) openModal(currentModalCard);
-    if (state.tab === 'wishlist') render();
+    if (state.tab === 'wishlist' || state.tab === 'compare') render();
     if (state.tab === 'all') render();
   });
   loadTeams().then(() => {
@@ -2341,6 +2379,12 @@ function render() {
     return;
   }
 
+  if (state.tab === 'compare') {
+    document.getElementById('resultCount').textContent = '';
+    renderCompareTab();
+    return;
+  }
+
   if (state.tab === 'skins') {
     document.getElementById('resultCount').textContent = '';
     renderSkinsTab();
@@ -2521,6 +2565,37 @@ function openLightbox(url, name) {
       <button class="lightbox-close" id="lightboxClose">✕</button>
       <img src="${url}" alt="${name}">
       <div class="lightbox-caption">${name}</div>
+    </div>
+  `;
+  document.getElementById('lightboxBackdrop').onclick = (e) => {
+    if (e.target.id === 'lightboxBackdrop') closeLightbox();
+  };
+  document.getElementById('lightboxClose').onclick = closeLightbox;
+}
+
+// Shows a skin next to the card's original art, so it's easy to compare and
+// decide which one you actually prefer. Falls back to the plain single-image
+// lightbox if the skin has no linked card yet (e.g. an unreleased character).
+function openCompareLightbox(skin, card) {
+  if (!card) {
+    openLightbox(skin.image_url, skin.skin_name);
+    return;
+  }
+
+  const root = document.getElementById('lightboxRoot');
+  root.innerHTML = `
+    <div class="lightbox-backdrop" id="lightboxBackdrop">
+      <button class="lightbox-close" id="lightboxClose">✕</button>
+      <div class="compare-shell">
+        <div class="compare-side">
+          <img src="${card.image_url}" alt="${card.name}">
+          <div class="lightbox-caption">${card.name} <span class="compare-tag">Original</span></div>
+        </div>
+        <div class="compare-side">
+          <img src="${skin.image_url}" alt="${skin.skin_name}">
+          <div class="lightbox-caption">${skin.skin_name}</div>
+        </div>
+      </div>
     </div>
   `;
   document.getElementById('lightboxBackdrop').onclick = (e) => {
@@ -2904,6 +2979,7 @@ function renderTeamsTab() {
           <div class="team-thumb-item">
             <img src="${imgUrl}" alt="${s.card.name}" title="${s.card.name}" loading="lazy" style="cursor:pointer;" data-card="${s.card.id}">
             <span class="team-thumb-milestone">${milestoneLabel(s.milestone)}</span>
+            ${s.ability ? `<span class="team-thumb-tag ability">${s.ability}</span>` : ''}
             ${s.ethereal ? '<span class="team-thumb-tag ethereal">Ethereal</span>' : ''}
             ${s.divineAttunement ? `<span class="team-thumb-tag divine">${s.divineAttunement}</span>` : ''}
           </div>
@@ -3938,16 +4014,20 @@ function renderSkinGrid() {
 
 function renderWishlistTab() {
   const content = document.getElementById('content');
+  content.innerHTML = `<div id="myWishlistSection"></div>`;
+  renderMyWishlistSection();
+}
 
+function renderCompareTab() {
+  const content = document.getElementById('content');
   content.innerHTML = `
     <div class="user-lookup-section">
-      <p class="slots-label">Look up another user's skins</p>
+      <p class="slots-label">Find a user to compare with</p>
       <div class="search-box" style="max-width:340px;margin-bottom:10px;">
         <input type="text" id="userLookupInput" placeholder="Enter a username…" value="${lookupSearchTerm}">
       </div>
       <div id="userLookupResults"></div>
     </div>
-    <div id="myWishlistSection" style="margin-top:30px;"></div>
   `;
 
   document.getElementById('userLookupInput').addEventListener('input', async (e) => {
@@ -3957,7 +4037,6 @@ function renderWishlistTab() {
   });
 
   refreshLookupResults();
-  renderMyWishlistSection();
 }
 
 async function refreshLookupResults() {
@@ -4004,11 +4083,8 @@ async function loadLookupTargetWishlist() {
   lookupTargetSkinWishlist = error ? [] : (data || []);
 }
 
-function renderLookupTarget() {
-  const box = document.getElementById('userLookupResults');
-  if (!box || !lookupTargetProfile) return;
-
-  const entries = lookupTargetSkinWishlist
+function skinEntryList(rows) {
+  return rows
     .map(row => {
       const skin = allSkins.find(s => s.skin_id === row.skin_id);
       if (!skin) return null;
@@ -4016,9 +4092,15 @@ function renderLookupTarget() {
       return { row, skin, card };
     })
     .filter(Boolean);
+}
 
-  const wanted = entries.filter(e => e.row.wanted && !e.row.obtained);
-  const obtained = entries.filter(e => e.row.obtained);
+function renderLookupTarget() {
+  const box = document.getElementById('userLookupResults');
+  if (!box || !lookupTargetProfile) return;
+
+  const theirEntries = skinEntryList(lookupTargetSkinWishlist);
+  const theirWanted = theirEntries.filter(e => e.row.wanted && !e.row.obtained);
+  const theirObtained = theirEntries.filter(e => e.row.obtained);
 
   const renderGroup = (title, list) => {
     if (list.length === 0) return '';
@@ -4027,7 +4109,7 @@ function renderLookupTarget() {
       <div class="wish-grid">
         ${list.map(({ skin, card }) => `
           <div class="wish-item ${rarityClass(skin.rarity)}">
-            <img src="${skin.image_url}" alt="${skin.skin_name}">
+            <img src="${skin.image_url}" alt="${skin.skin_name}" data-skin-id="${skin.skin_id}" style="cursor:zoom-in;">
             <div class="wcard">${card ? card.name : skin.character_name}</div>
             <div class="wname">${skin.skin_name}</div>
           </div>
@@ -4036,16 +4118,52 @@ function renderLookupTarget() {
     `;
   };
 
+  // Trade-matching: only meaningful if I'm signed in and have my own wishlist loaded.
+  let tradeHtml = '';
+  if (currentSession) {
+    const theyHaveIWant = theirObtained.filter(e => {
+      const mine = wishlistBySkinId[e.skin.skin_id];
+      return mine && mine.wanted && !mine.obtained;
+    });
+    const iHaveTheyWant = theirWanted.filter(e => {
+      const mine = wishlistBySkinId[e.skin.skin_id];
+      return mine && mine.obtained;
+    });
+
+    if (theyHaveIWant.length > 0 || iHaveTheyWant.length > 0) {
+      tradeHtml = `
+        <p class="slots-label" style="margin-top:0;">Potential trades</p>
+        ${renderGroup(`${lookupTargetProfile.username} has — you want`, theyHaveIWant)}
+        ${renderGroup(`You have — ${lookupTargetProfile.username} wants`, iHaveTheyWant)}
+      `;
+    } else {
+      tradeHtml = '<p class="calc-note" style="margin-bottom:20px;">No overlap between your wishlist and theirs right now.</p>';
+    }
+  } else {
+    tradeHtml = '<p class="calc-note" style="margin-bottom:20px;">Sign in to see potential trades between your wishlist and theirs.</p>';
+  }
+
   box.innerHTML = `
     <div class="lookup-target-header">
-      <span class="tname">Viewing: ${lookupTargetProfile.username}</span>
+      <span class="tname">Comparing with: ${lookupTargetProfile.username}</span>
       <button class="clear-btn" id="lookupClearBtn">Change user</button>
     </div>
-    ${entries.length === 0
+    ${tradeHtml}
+    <p class="slots-label">${lookupTargetProfile.username}'s full skin list</p>
+    ${theirEntries.length === 0
       ? '<p class="calc-note">This user has no wishlisted skins.</p>'
-      : renderGroup('Wanted', wanted) + renderGroup('Obtained', obtained)
+      : renderGroup('Wanted', theirWanted) + renderGroup('Obtained', theirObtained)
     }
   `;
+
+  box.querySelectorAll('img[data-skin-id]').forEach(img => {
+    img.onclick = () => {
+      const skin = allSkins.find(s => s.skin_id === img.dataset.skinId);
+      if (!skin) return;
+      const card = skin.card_id ? allCards.find(c => c.id === skin.card_id) : null;
+      openCompareLightbox(skin, card);
+    };
+  });
 
   document.getElementById('lookupClearBtn').onclick = async () => {
     lookupTargetProfile = null;
@@ -4127,7 +4245,7 @@ function renderMyWishlistSection() {
       <div class="wish-grid">
         ${list.map(({ row, skin, card }) => `
           <div class="wish-item ${rarityClass(skin.rarity)}">
-            <img src="${skin.image_url}" alt="${skin.skin_name}">
+            <img src="${skin.image_url}" alt="${skin.skin_name}" data-skin-id="${skin.skin_id}" style="cursor:zoom-in;">
             <div class="wcard">${card ? card.name : skin.character_name}</div>
             <div class="wname">${skin.skin_name}</div>
             <div class="wish-actions">
@@ -4148,6 +4266,15 @@ function renderMyWishlistSection() {
     renderCardGroup('Cards Obtained', cardEntries.filter(e => e.row.obtained)) +
     renderSkinGroup('Skins Wanted', skinEntries.filter(e => e.row.wanted && !e.row.obtained)) +
     renderSkinGroup('Skins Obtained', skinEntries.filter(e => e.row.obtained));
+
+  content.querySelectorAll('img[data-skin-id]').forEach(img => {
+    img.onclick = () => {
+      const skin = allSkins.find(s => s.skin_id === img.dataset.skinId);
+      if (!skin) return;
+      const card = skin.card_id ? allCards.find(c => c.id === skin.card_id) : null;
+      openCompareLightbox(skin, card);
+    };
+  });
 
   content.querySelectorAll('.wish-btn').forEach(btn => {
     btn.onclick = async () => {
